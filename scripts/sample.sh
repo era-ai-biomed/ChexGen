@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Configuration parameters
 NUM_GPUS=1
 CONFIG_FILE="configs/model.py"
-CKPT="weights/impression_512.pth"
+CKPT="weights/finetune_impression_512.pth"
 OUTPUT_DIR="visualization"
 PORT=12345
 CFG_SCALE=4

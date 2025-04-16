@@ -40,7 +40,7 @@ Download the pre-trained model weights from Google Drive:
 
 After downloading, place the weights file in your preferred location. The default path used in the sample script is:
 ```
-weights/impression_512.pth
+weights/finetune_impression_512.pth
 ```
 
 You may need to modify the path in the sample script to match your setup.
@@ -54,7 +54,7 @@ The `sample.sh` script in the `scripts` directory provides a convenient way to g
 This bash script:
 1. Configures generation parameters (GPU count, checkpoint path, output directory, etc.)
 2. Takes predefined text prompts describing medical conditions
-3. Runs the generation model via distributed PyTorch
+3. Runs the generation model
 4. Saves the generated images to the specified output directory
 
 ### Usage
