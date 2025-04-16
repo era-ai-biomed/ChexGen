@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ylchen@projgw.cse.cuhk.edu.hk:2272 password" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
+    <option name="confirmBeforeUploading" value="false" />
+    <serverData>
+      <paths name="yfji@pluo-gpu1.cs.hku.hk:22 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/data/yfji/project/radiffuser" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="ylchen@projgw.cse.cuhk.edu.hk:2272 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/proj74/ylchen/project/radiffuser" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
