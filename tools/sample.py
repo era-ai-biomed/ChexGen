@@ -80,7 +80,8 @@ def main(cfg):
 
     diffusion = create_diffusion(str(cfg.num_sampling_steps))
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{cfg.vae}").to(device)
-    text_model = T5Embedder(device=device, cache_dir="/scratch/m000071/yfj/weights/t5")
+    # cache_dir="/scratch/m000071/yfj/weights/t5"
+    text_model = T5Embedder(device=device)
     token_nums = model_cfg.get("token_num", 120)
 
     if cfg.get("text_prompt_file", None) is not None:
