@@ -6,6 +6,12 @@
   <a href="#license"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="License"></a>
 </p>
 
+## News
+- **[2025.09]** Paper released on [arXiv](https://arxiv.org/abs/2509.03903).
+- **[2026.03]** ChexGen has been accepted by **NEJM AI**.
+
+## Introduction
+
 **ChexGen** is a generative foundation model for chest radiography that synthesizes realistic chest X-rays conditioned on text prompts, masks, and bounding boxes. Built on a latent diffusion transformer (DiT) architecture and trained on 960,000 radiograph-report pairs, ChexGen can:
 
 - Improve disease **classification**, **detection**, and **segmentation** with less training data
