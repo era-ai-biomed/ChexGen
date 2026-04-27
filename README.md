@@ -10,7 +10,7 @@ ChexGen is a generative foundation model for chest radiography. It synthesizes c
 
 ## News
 
-- **[2026.03]** ChexGen has been accepted by **NEJM AI**.
+- **[2026.03]** ChexGen has been accepted by **NEJM AI**. [Published article](paper/AIoa2500799.pdf) and [supplementary appendix](paper/aioa2500799_appendix.pdf) are available.
 - **[2025.09]** Paper released on [arXiv](https://arxiv.org/abs/2509.03903).
 
 ## Highlights
