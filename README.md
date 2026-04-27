@@ -27,13 +27,12 @@ The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-j
 
 | Checkpoint | Condition | Resolution | Config |
 | --- | --- | ---: | --- |
-| `pretrain_256.pth` | Pretraining checkpoint | 256 x 256 | TBD |
-| `finetune_impression_512.pth` | Impression text | 512 x 512 | [`configs/model.py`](configs/model.py) |
-| `finetune_impression_1024.pth` | Impression text | 1024 x 1024 | TBD |
-| `finetune_impression_sex_age_race_512.pth` | Impression text + demographic attributes | 512 x 512 | TBD |
-| `finetune_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | TBD |
+| `pretrained_256.pth` | Pretraining checkpoint | 256 x 256 | TBD |
+| `finetuned_impression_512.pth` | Impression text | 512 x 512 | [`configs/finetuned_impression_512.py`](configs/finetuned_impression_512.py) |
+| `finetuned_demographic_impression_512.pth` | Impression text + demographic attributes | 512 x 512 | [`configs/finetuned_demographic_impression_512.py`](configs/finetuned_demographic_impression_512.py) |
+| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | TBD |
 
-The quick start below demonstrates text-conditioned generation with `finetune_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
+The quick start below demonstrates text-conditioned generation with `finetuned_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
 
 ### Request Weights
 
@@ -45,11 +44,10 @@ Recommended layout:
 
 ```text
 weights/
-  finetune_impression_512.pth
-  finetune_impression_1024.pth
-  finetune_impression_sex_age_race_512.pth
-  finetune_control_siim_512.pth
-  pretrain_256.pth
+  finetuned_impression_512.pth
+  finetuned_demographic_impression_512.pth
+  finetuned_control_siim_512.pth
+  pretrained_256.pth
 ```
 
 Checkpoint files are intentionally ignored by git.
@@ -72,25 +70,36 @@ The first run may download additional public model components:
 
 If you are running on a restricted cluster, pre-download these assets into the Hugging Face cache before launching sampling.
 
-## Quick Start
+## Text to Xray Generation
 
-After placing `weights/finetune_impression_512.pth`, run:
+The default text-to-X-ray path uses `weights/finetuned_impression_512.pth` paired with [`configs/finetuned_impression_512.py`](configs/finetuned_impression_512.py). The sections below all use this 512 setup as the running example; swap in another checkpoint + matching config to generate at a different resolution (see [Other Resolutions](#other-resolutions)).
+
+### Quick Start
+
+After placing `weights/finetuned_impression_512.pth`, pick one of the wrappers:
 
 ```bash
-bash scripts/sample.sh
+bash scripts/sample_impression.sh        # five built-in impression prompts
+bash scripts/sample_csv.sh    # read prompts from data/mimic_val_p19_impression_example.csv
 ```
 
-Generated images are saved to `visualization/`.
+`sample_csv.sh` also accepts a custom CSV path:
 
-## Custom Text Generation
+```bash
+bash scripts/sample_csv.sh path/to/your_prompts.csv
+```
 
-You can edit the prompt list in `scripts/sample.sh`, or call the sampler directly:
+Outputs land in `visualization/` along with a `prompts.txt` mapping each image to its source prompt.
+
+### Direct Sampler Invocation
+
+For one-off prompts or non-default flags, call `tools/sample.py` directly:
 
 ```bash
 torchrun \
     --nproc_per_node=1 \
     --master_port=12345 \
-    tools/sample.py configs/model.py weights/finetune_impression_512.pth \
+    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
     --work-dir output/ \
     --text-prompt "Moderate cardiomegaly with mild vascular congestion." \
     --cfg-scale 4.0 \
@@ -98,24 +107,49 @@ torchrun \
     --seed 1234
 ```
 
-Prompt files are also supported:
+### Prompt Files
+
+Pass `--text-prompt-file` instead of `--text-prompt` to batch over a file:
 
 ```bash
 torchrun \
     --nproc_per_node=1 \
     --master_port=12345 \
-    tools/sample.py configs/model.py weights/finetune_impression_512.pth \
+    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
     --work-dir output/ \
-    --text-prompt-file prompts.csv \
-    --text-prompt-key caption
+    --text-prompt-file prompts.csv
 ```
 
-Supported prompt file formats:
+Supported formats:
 
 - `.csv`: use `--text-prompt-key` for the prompt column. A `name` column is optional and controls output file names.
 - `.json`: list of strings or list of objects containing the prompt key.
 - `.jsonl`: one string or object per line.
 - `.txt`: one prompt per line.
+
+A ready-to-run example ships at [`data/mimic_val_p19_impression_example.csv`](data/mimic_val_p19_impression_example.csv) (10 rows; columns `name`, `Finding Labels`, `impression`):
+
+```csv
+name,Finding Labels,impression
+chest_001.png,No Finding,No acute cardiopulmonary abnormality. ...
+chest_002.png,Cardiomegaly,Mild enlargement of the cardiac silhouette without overt pulmonary edema.
+chest_003.png,Pleural Effusion,New small loculated pleural effusion within the major fissure of the right lung.
+```
+
+The default `--text-prompt-key` is `impression`; override only if your CSV uses a different column name. If the `name` column is omitted, outputs are saved as `0.png`, `1.png`, ... by row index.
+
+### Multi-GPU Sampling
+
+The sampler uses `DistributedSampler` to shard prompts across ranks, so larger prompt files can be parallelised across GPUs. Set `--nproc_per_node` to the number of available GPUs (and update `NUM_GPUS` in `scripts/sample_impression.sh` if you use the wrapper):
+
+```bash
+torchrun \
+    --nproc_per_node=4 \
+    --master_port=12345 \
+    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
+    --work-dir output/ \
+    --text-prompt-file prompts.csv
+```
 
 ### Common Parameters
 
@@ -124,23 +158,22 @@ Supported prompt file formats:
 | `--cfg-scale` | `4.0` | Classifier-free guidance scale |
 | `--num-sampling-steps` | `100` | Number of diffusion denoising steps |
 | `--seed` | `0` | Random seed |
-| `--batch-size` | `1` | Batch size per GPU |
+| `--batch-size` | `1` | Batch size per GPU. Use `1` for best fidelity; larger values run faster but route cross-attention through `xformers` `BlockDiagonalMask`, whose differing reduction order can introduce small numerical drift across the 100 sampling steps. |
 | `--text-prompt-file` | `None` | Prompt file path |
-| `--text-prompt-key` | `caption` | Prompt field for CSV/JSON/JSONL files |
-
-For resolutions other than 512 x 512, use a matching config. The latent `input_size` should be 32 for 256 x 256 images, 64 for 512 x 512 images, and 128 for 1024 x 1024 images.
+| `--text-prompt-key` | `impression` | Prompt field for CSV/JSON/JSONL files |
 
 ## Project Structure
 
 ```text
 ChexGen/
   configs/            Model configurations
+  data/               Example prompt CSV (MIMIC-CXR validation slice)
   radiffuser/
     models/           DiT, T5 text encoder, embedders, control modules
     diffusion/        Gaussian diffusion and timestep respacing
     datasets/         Text and text-to-image dataset loaders
     utils/            Checkpoint loading, logging, synchronization
-  scripts/            Shell scripts for generation
+  scripts/            Shell scripts for generation (sample_impression.sh, sample_csv.sh, sample_demographic_impression.sh)
   tools/              Entry-point scripts
 ```
 

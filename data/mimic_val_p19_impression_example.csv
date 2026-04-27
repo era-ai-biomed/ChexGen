@@ -1,0 +1,11 @@
+name,Finding Labels,impression
+chest_001.png,No Finding,No acute cardiopulmonary abnormality. Age indeterminate mild anterior wedge compression deformity of an upper lumbar vertebral body.
+chest_002.png,Cardiomegaly,Mild enlargement of the cardiac silhouette without overt pulmonary edema.
+chest_003.png,Pleural Effusion,New small loculated pleural effusion within the major fissure of the right lung.
+chest_004.png,Atelectasis,Subsegmental atelectasis in the lung bases. Otherwise no acute cardiopulmonary abnormality.
+chest_005.png,Pneumonia,Left basilar pneumonia. Followup radiographs after treatment are recommended to ensure resolution of this finding.
+chest_006.png,Airspace Opacity,Faint multifocal opacities in the lungs bilaterally may be secondary to aspiration. Continued close interval follow up is recommended.
+chest_007.png,Atelectasis|Pleural Effusion,Significant interval decrease in bilateral pleural effusions with possible only trace right pleural effusion remaining. Right base atelectasis.
+chest_008.png,Airspace Opacity|Pneumonia,Retrocardiac opacity worrisome for a left lower lobe infectious process.
+chest_009.png,Edema,"Mild pulmonary edema, improved since prior imaging."
+chest_010.png,Fracture,"No acute cardiopulmonary process. Left humerus fracture, better assessed on dedicated radiographs."

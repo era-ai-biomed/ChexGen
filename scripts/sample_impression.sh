@@ -13,8 +13,9 @@ NC='\033[0m' # No Color
 
 # Configuration parameters
 NUM_GPUS=1
-CONFIG_FILE="configs/model.py"
-CKPT="weights/finetune_impression_512.pth"
+TORCHRUN="/scratch/m000071/yfj/miniconda3/envs/chexgen/bin/torchrun"
+CONFIG_FILE="configs/finetuned_impression_512.py"
+CKPT="weights/finetuned_impression_512.pth"
 OUTPUT_DIR="visualization"
 PORT=12345
 CFG_SCALE=4
@@ -37,6 +38,7 @@ declare -a PROMPTS=(
 # Display configuration information
 echo -e "${GREEN}========== Generation Configuration ==========${NC}"
 echo -e "${YELLOW}Number of GPUs:${NC} $NUM_GPUS"
+echo -e "${YELLOW}Torchrun:${NC} $TORCHRUN"
 echo -e "${YELLOW}Config file:${NC} $CONFIG_FILE" 
 echo -e "${YELLOW}Checkpoint:${NC} $CKPT"
 echo -e "${YELLOW}Output directory:${NC} $OUTPUT_DIR"
@@ -64,7 +66,7 @@ if [[ ! -f "${CKPT}" ]]; then
 fi
 
 # Run the generation command
-torchrun \
+"${TORCHRUN}" \
     --nproc_per_node=${NUM_GPUS} \
     --master_port=${PORT} \
     tools/sample.py ${CONFIG_FILE} ${CKPT} \
@@ -75,4 +77,3 @@ torchrun \
 
 # Check generation results
 echo -e "${GREEN}Generation complete! Images saved to: ${OUTPUT_DIR}${NC}"
-

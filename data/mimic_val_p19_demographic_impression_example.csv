@@ -1,0 +1,11 @@
+name,Finding Labels,impression
+chest_sar_001.png,No Finding,"sex:Male, age:71.0, race:Black. No acute findings in the chest."
+chest_sar_002.png,Cardiomegaly,"sex:Male, age:61.0, race:White. Mild cardiomegaly. No signs of pneumonia or edema."
+chest_sar_003.png,Pleural Effusion,"sex:Male, age:67.0, race:White. Small bilateral pleural effusions. No pneumonia."
+chest_sar_004.png,Atelectasis,"sex:Female, age:68.0, race:Black. Subsegmental atelectasis in both lung bases."
+chest_sar_005.png,Pneumonia,"sex:Male, age:72.0, race:Black. Multifocal pneumonia. Follow up radiographs after treatment are recommended to ensure resolution of this finding."
+chest_sar_006.png,Airspace Opacity,"sex:Male, age:72.0, race:Asian. No acute cardiopulmonary abnormality. Grossly unchanged appearance of right apical patchy opacity with calcifications, better assessed on previous chest CT."
+chest_sar_007.png,Atelectasis|Pleural Effusion,"sex:Male, age:81.0, race:Black. Atelectasis at the right lung base with small but decreased pleural effusion."
+chest_sar_008.png,Airspace Opacity|Pneumonia,"sex:Male, age:64.0, race:White. New right middle lobe pneumonia. Residual opacities at the left lung base may represent scarring or residual infection. Follow-up after treatment is recommended."
+chest_sar_009.png,Edema,"sex:Male, age:71.0, race:Black. Mild interstitial edema."
+chest_sar_010.png,Fracture,"sex:Male, age:66.0, race:White. No acute cardiopulmonary process. There is a left non-displaced rib fracture."

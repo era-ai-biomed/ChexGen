@@ -8,7 +8,7 @@
 import torch
 import torch.nn as nn
 import xformers.ops
-from timm.models.layers import DropPath
+from timm.layers import DropPath
 from timm.models.vision_transformer import Mlp, Attention as Attention_
 
 

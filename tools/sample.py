@@ -3,6 +3,23 @@
 
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
+import argparse
+import os
+import os.path as osp
+import sys
+import warnings
+
+ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), osp.pardir))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module=r"torch\.utils\.checkpoint")
+warnings.filterwarnings("ignore", category=UserWarning, module=r"torch\._dynamo\.eval_frame")
+
+from huggingface_hub.utils import disable_progress_bars
+disable_progress_bars()
+
 import torch
 from mmengine import Config
 from tqdm import tqdm
@@ -11,15 +28,11 @@ from radiffuser.datasets.t2i import TextDataset
 from radiffuser.diffusion import create_diffusion
 from radiffuser.models.builder import build_model
 from radiffuser.models.t5 import T5Embedder
-from radiffuser.utils import find_model
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 from torchvision.utils import save_image
 from diffusers.models import AutoencoderKL
-import argparse
-import os
-import os.path as osp
 
 import torch.distributed as dist
 
@@ -28,6 +41,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=str, help="Path to a config file.")
     parser.add_argument("ckpt", type=str, default=None)
+    parser.add_argument("--checkpoint-key", type=str, default="state_dict_ema")
     parser.add_argument("--work-dir", type=str, default="work_dirs/debug-sample-ddp")
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--cfg-scale", type=float, default=4.0)
@@ -35,7 +49,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--text-prompt", nargs='+')
     parser.add_argument("--text-prompt-file", type=str, default=None)
-    parser.add_argument("--text-prompt-key", type=str, default="caption")
+    parser.add_argument("--text-prompt-key", type=str, default="impression")
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--local-rank", type=int, default=0)
     args = parser.parse_args()
@@ -48,6 +62,28 @@ def merge_args(cfg, args):
         if v is not None:
             cfg[k] = v
     return cfg
+
+
+def load_state_dict_from_checkpoint(ckpt_path, checkpoint_key):
+    if not osp.isfile(ckpt_path):
+        raise FileNotFoundError(f"Could not find checkpoint at {ckpt_path}")
+
+    checkpoint = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
+    if checkpoint_key not in checkpoint:
+        if isinstance(checkpoint, dict):
+            available_keys = ", ".join(checkpoint.keys())
+        else:
+            available_keys = f"<checkpoint type: {type(checkpoint).__name__}>"
+        raise KeyError(
+            f"Checkpoint {ckpt_path} does not contain key {checkpoint_key!r}. "
+            f"Available keys: {available_keys}"
+        )
+
+    state_dict = checkpoint[checkpoint_key]
+    return {
+        key[len("module."):] if key.startswith("module.") else key: value
+        for key, value in state_dict.items()
+    }
 
 
 def main(cfg):
@@ -64,15 +100,27 @@ def main(cfg):
     torch.cuda.set_device(device)
     print(f"Starting rank {rank}, seed {seed}, world size {dist.get_world_size()}")
 
-    # setup model
+    if args.batch_size > 1 and rank == 0:
+        print(
+            f"[warn] batch_size={args.batch_size}: cross-attention is routed through "
+            f"xformers BlockDiagonalMask, whose reduction order differs from the single-"
+            f"segment path. Per-step drift is ~1e-3 relative; over 100 sampling steps this "
+            f"may visibly degrade fidelity vs batch_size=1."
+        )
+
+    # setup model (force grad_checkpoint off for inference: it triggers
+    # use_reentrant / requires_grad warnings under no_grad and saves nothing)
     model_cfg = cfg.get("model")
+    model_cfg["grad_checkpoint"] = False
     latent_size = model_cfg.get("input_size")
     model = build_model(model_cfg).to(device)
 
     # load model
     ckpt_path = cfg.get("ckpt")
-    model.load_state_dict(find_model(ckpt_path, revised_keys={"module.": ""}), strict=True)
-    print(f"loaded checkpoint from {ckpt_path}")
+    checkpoint_key = cfg.get("checkpoint_key")
+    state_dict = load_state_dict_from_checkpoint(ckpt_path, checkpoint_key)
+    model.load_state_dict(state_dict, strict=True)
+    print(f"loaded checkpoint key {checkpoint_key!r} from {ckpt_path}")
 
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device])
     model.float()
@@ -109,6 +157,7 @@ def main(cfg):
     if rank == 0:
         print(f"Generating {len(dataset)} samples")
 
+    local_entries = []
     for name, text in tqdm(dataloader):
         continue_flag = True
 
@@ -145,14 +194,22 @@ def main(cfg):
         samples = vae.decode(samples / 0.18215).sample
 
         for i, sample in enumerate(samples):
-            if ".png" not in name[i] and ".jpg" not in name[i]:
-                name[i] = f"{name[i]}.png"
-            image_path = osp.join(args.work_dir, name[i])
+            fname = name[i] if (".png" in name[i] or ".jpg" in name[i]) else f"{name[i]}.png"
+            image_path = osp.join(args.work_dir, fname)
             image_dir = osp.dirname(image_path)
             if not osp.exists(image_dir):
                 os.makedirs(image_dir)
             save_image(samples[i], image_path, normalize=True, value_range=(-1, 1))
+            local_entries.append((fname, text[i].strip()))
 
+    dist.barrier()
+    gathered = [None] * dist.get_world_size()
+    dist.all_gather_object(gathered, local_entries)
+    if rank == 0:
+        all_entries = sorted({e for chunk in gathered for e in chunk})
+        with open(osp.join(args.work_dir, "prompts.txt"), "w") as fp:
+            for fname, prompt_text in all_entries:
+                fp.write(f"{fname}\t{prompt_text}\n")
     dist.barrier()
     dist.destroy_process_group()
 

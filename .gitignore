@@ -1,13 +1,16 @@
 data/*
+!data/*.csv
 *.pyc
 __pycache__/
 .pytest_cache/
 .venv/
 .DS_Store
+.codex
 weights/*
 logs/*
 output/
 outputs/
 visualization/
+visualization_*/
 work_dirs/
 pretrained_models/
