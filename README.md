@@ -25,13 +25,13 @@ ChexGen is a generative foundation model for chest radiography. It synthesizes c
 
 The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-jpg/), which requires credentialed access via [PhysioNet](https://physionet.org/). For that reason, access to model weights requires verification.
 
-| Checkpoint | Condition | Resolution | Notes |
+| Checkpoint | Condition | Resolution | Config |
 | --- | --- | ---: | --- |
-| `finetune_impression_512.pth` | Impression text | 512 x 512 | Used by the quick-start script |
-| `finetune_impression_1024.pth` | Impression text | 1024 x 1024 | Use the matching 1024 config |
-| `finetune_impression_sex_age_race_512.pth` | Impression text + demographic attributes | 512 x 512 | Use prompts with the matching demographic format |
-| `finetune_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | Use the control-conditioned sampling path |
-| `pretrain_256.pth` | Pretraining checkpoint | 256 x 256 | For research and fine-tuning |
+| `pretrain_256.pth` | Pretraining checkpoint | 256 x 256 | TBD |
+| `finetune_impression_512.pth` | Impression text | 512 x 512 | [`configs/model.py`](configs/model.py) |
+| `finetune_impression_1024.pth` | Impression text | 1024 x 1024 | TBD |
+| `finetune_impression_sex_age_race_512.pth` | Impression text + demographic attributes | 512 x 512 | TBD |
+| `finetune_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | TBD |
 
 The quick start below demonstrates text-conditioned generation with `finetune_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
 
