@@ -1,5 +1,13 @@
 data/*
 *.pyc
+__pycache__/
+.pytest_cache/
+.venv/
 .DS_Store
 weights/*
 logs/*
+output/
+outputs/
+visualization/
+work_dirs/
+pretrained_models/

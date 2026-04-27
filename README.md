@@ -2,115 +2,166 @@
 
 <p align="center">
   <a href="https://arxiv.org/abs/2509.03903"><img src="https://img.shields.io/badge/arXiv-2509.03903-b31b1b.svg" alt="arXiv"></a>
-  <a href="https://ai.nejm.org"><img src="https://img.shields.io/badge/NEJM AI-Accepted-blue.svg" alt="NEJM AI"></a>
+  <a href="https://ai.nejm.org"><img src="https://img.shields.io/badge/NEJM%20AI-Accepted-blue.svg" alt="NEJM AI"></a>
   <a href="#license"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="License"></a>
 </p>
 
+ChexGen is a generative foundation model for chest radiography. It synthesizes chest X-rays from radiology text prompts and optional control inputs, and is designed to support synthetic data generation, downstream model development, and research on robustness and fairness in medical imaging.
+
 ## News
-- **[2025.09]** Paper released on [arXiv](https://arxiv.org/abs/2509.03903).
+
 - **[2026.03]** ChexGen has been accepted by **NEJM AI**.
+- **[2025.09]** Paper released on [arXiv](https://arxiv.org/abs/2509.03903).
 
-## Introduction
+## Highlights
 
-**ChexGen** is a generative foundation model for chest radiography that synthesizes realistic chest X-rays conditioned on text prompts, masks, and bounding boxes. Built on a latent diffusion transformer (DiT) architecture and trained on 960,000 radiograph-report pairs, ChexGen can:
+- Latent diffusion transformer (DiT) architecture for chest radiograph generation.
+- Trained on 960,000 radiograph-report pairs.
+- Text- and control-conditioned generation from radiology impressions.
+- Checkpoints for multiple resolutions and conditioning settings.
+- Open research code for model loading, text embedding, diffusion sampling, and dataset utilities.
 
-- Improve disease **classification**, **detection**, and **segmentation** with less training data
-- Generate high-quality **synthetic data** for downstream model training
-- Enable **bias detection and mitigation** to enhance fairness across demographic groups
+## Available Checkpoints
 
-## Getting Started
+The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-jpg/), which requires credentialed access via [PhysioNet](https://physionet.org/). For that reason, access to model weights requires verification.
 
-### Installation
+| Checkpoint | Condition | Resolution | Notes |
+| --- | --- | ---: | --- |
+| `finetune_impression_512.pth` | Impression text | 512 x 512 | Used by the quick-start script |
+| `finetune_impression_1024.pth` | Impression text | 1024 x 1024 | Use the matching 1024 config |
+| `finetune_impression_sex_age_race_512.pth` | Impression text + demographic attributes | 512 x 512 | Use prompts with the matching demographic format |
+| `finetune_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | Use the control-conditioned sampling path |
+| `finetune_control_chex_det10_1024.pth` | Control-conditioned generation | 1024 x 1024 | Use the control-conditioned sampling path |
+| `pretrain_256.pth` | Pretraining checkpoint | 256 x 256 | For research and fine-tuning |
+
+The quick start below demonstrates text-conditioned generation with `finetune_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
+
+### Request Weights
+
+1. Obtain [PhysioNet credentialed access](https://physionet.org/settings/credentialing/) by completing the required training.
+2. Fill out the [Model Access Request Form](https://docs.google.com/forms/d/e/1FAIpQLSdb9grrTKpslvaaRmShY86nPyv2478fVm9VsELPPkTTzQR6Sg/viewform).
+3. After approval, place downloaded checkpoints under `weights/`.
+
+Recommended layout:
+
+```text
+weights/
+  finetune_impression_512.pth
+  finetune_impression_1024.pth
+  finetune_impression_sex_age_race_512.pth
+  finetune_control_siim_512.pth
+  finetune_control_chex_det10_1024.pth
+  pretrain_256.pth
+```
+
+Checkpoint files are intentionally ignored by git.
+
+## Installation
 
 ```bash
-git clone https://github.com/YuanfengJi/ChexGen.git
+git clone https://github.com/era-ai-biomed/ChexGen.git
 cd ChexGen
 pip install -r requirements.txt
+pip install -e .
 ```
 
-Key dependencies: PyTorch >= 2.2.0, Transformers, Diffusers, xFormers, MMEngine.
+Key dependencies include PyTorch, torchvision, Transformers, Diffusers, xFormers, MMEngine, timm, and sentencepiece. The sampling script expects an NVIDIA GPU with CUDA and runs through PyTorch distributed sampling with the NCCL backend.
 
-### Model Weights
+The first run may download additional public model components:
 
-The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-jpg/), which requires credentialed access via [PhysioNet](https://physionet.org/). We therefore require verification before granting access to model weights.
+- `DeepFloyd/t5-v1_1-xxl` for text embeddings.
+- `stabilityai/sd-vae-ft-ema` or `stabilityai/sd-vae-ft-mse` for latent decoding.
 
-Currently, we provide the text-conditioned generation weights. Weights for mask- and bounding-box-conditioned generation will be released in the future.
+If you are running on a restricted cluster, pre-download these assets into the Hugging Face cache before launching sampling.
 
-| Model | Condition | Resolution | 
-|-------|-----------|-----------|
-| ChexGen | Text | 512 x 512 |
+## Quick Start
 
-**Steps to access:**
-1. Obtain [PhysioNet credentialed access](https://physionet.org/settings/credentialing/) by completing the [CITI training course](https://about.citiprogram.org/)
-2. Fill out our [Model Access Request Form](https://docs.google.com/forms/d/e/1FAIpQLSdb9grrTKpslvaaRmShY86nPyv2478fVm9VsELPPkTTzQR6Sg/viewform) and upload your CITI certificate
-3. We will review your request and reply with the download link via email
-
-After downloading, place the weights under `weights/`:
-
-```bash
-mkdir -p weights
-# move downloaded file to weights/finetune_impression_512.pth
-```
-
-## Usage
-
-### Quick Start
+After placing `weights/finetune_impression_512.pth`, run:
 
 ```bash
 bash scripts/sample.sh
 ```
 
-This generates CXR images from predefined radiology text prompts and saves them to `visualization/`. The script includes example prompts covering common findings such as cardiomegaly, pleural effusions, pulmonary masses, and normal chest X-rays.
+Generated images are saved to `visualization/`.
 
-### Custom Generation
+## Custom Text Generation
 
-Edit the prompts in `scripts/sample.sh`, or call the generation script directly:
+You can edit the prompt list in `scripts/sample.sh`, or call the sampler directly:
 
 ```bash
-python -m torch.distributed.launch \
+torchrun \
     --nproc_per_node=1 \
     --master_port=12345 \
     tools/sample.py configs/model.py weights/finetune_impression_512.pth \
     --work-dir output/ \
     --text-prompt "Moderate cardiomegaly with mild vascular congestion." \
     --cfg-scale 4.0 \
+    --num-sampling-steps 100 \
     --seed 1234
 ```
 
-**Key parameters:**
+Prompt files are also supported:
+
+```bash
+torchrun \
+    --nproc_per_node=1 \
+    --master_port=12345 \
+    tools/sample.py configs/model.py weights/finetune_impression_512.pth \
+    --work-dir output/ \
+    --text-prompt-file prompts.csv \
+    --text-prompt-key caption
+```
+
+Supported prompt file formats:
+
+- `.csv`: use `--text-prompt-key` for the prompt column. A `name` column is optional and controls output file names.
+- `.json`: list of strings or list of objects containing the prompt key.
+- `.jsonl`: one string or object per line.
+- `.txt`: one prompt per line.
+
+### Common Parameters
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--cfg-scale` | 4.0 | Classifier-free guidance scale |
-| `--num-sampling-steps` | 100 | Number of diffusion denoising steps |
-| `--seed` | 0 | Random seed for reproducibility |
-| `--batch-size` | 1 | Batch size per GPU |
-| `--text-prompt-file` | — | JSON/CSV file with prompts (alternative to inline prompts) |
+| --- | ---: | --- |
+| `--cfg-scale` | `4.0` | Classifier-free guidance scale |
+| `--num-sampling-steps` | `100` | Number of diffusion denoising steps |
+| `--seed` | `0` | Random seed |
+| `--batch-size` | `1` | Batch size per GPU |
+| `--text-prompt-file` | `None` | Prompt file path |
+| `--text-prompt-key` | `caption` | Prompt field for CSV/JSON/JSONL files |
+
+For resolutions other than 512 x 512, use a matching config. The latent `input_size` should be 32 for 256 x 256 images, 64 for 512 x 512 images, and 128 for 1024 x 1024 images.
 
 ## Project Structure
 
-```
+```text
 ChexGen/
-├── configs/            # Model configurations
-├── radiffuser/
-│   ├── models/         # DiT, T5 text encoder, embedders
-│   ├── diffusion/      # Gaussian diffusion, timestep sampling
-│   ├── datasets/       # Text-to-image dataset loaders
-│   └── utils/          # Checkpoint loading, logging
-├── scripts/            # Shell scripts for generation
-└── tools/              # Entry-point scripts (sample.py)
+  configs/            Model configurations
+  radiffuser/
+    models/           DiT, T5 text encoder, embedders, control modules
+    diffusion/        Gaussian diffusion and timestep respacing
+    datasets/         Text and text-to-image dataset loaders
+    utils/            Checkpoint loading, logging, synchronization
+  scripts/            Shell scripts for generation
+  tools/              Entry-point scripts
 ```
+
+## Intended Use and Limitations
+
+ChexGen is released for research use. Generated images are synthetic and should not be used as a substitute for clinical imaging, diagnosis, treatment planning, or medical decision-making. Users are responsible for validating synthetic data in their own downstream settings, including checks for artifacts, label leakage, demographic bias, and task-specific failure modes.
 
 ## Citation
 
 If you find this work useful, please cite:
 
 ```bibtex
-@article{ji2025chexgen,
-  title={A Generative Foundation Model for Chest Radiography},
-  author={Ji, Yuanfeng and Lin, Dan and Wang, Xiyue and Zhang, Lu and Zhou, Wenhui and Ge, Chongjian and Chu, Ruihang and Yang, Xiaoli and Zhao, Junhan and Chen, Junsong and Luo, Xiangde and Yang, Sen and Fang, Jin and Luo, Ping and Li, Ruijiang},
+@article{ji2026generative,
+  title={A generative foundation model for chest radiography},
+  author={Ji, Yuanfeng and Lin, Dan and Wang, Xiyue and Zhang, Lu and Zhou, Wenhui and Ge, Chongjian and Chu, Ruihang and Yang, Xiaoli and Zhao, Junhan and Chen, Junsong and others},
   journal={NEJM AI},
-  year={2025}
+  pages={AIoa2500799},
+  year={2026},
+  publisher={Massachusetts Medical Society}
 }
 ```
 

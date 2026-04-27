@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Any
 import numpy as np
 import pandas as pd
@@ -61,10 +62,10 @@ class TextDataset(Dataset):
         self.transform = transform
         self.return_name = return_name
         self.text_list = []
+        self.name_list = None
 
         if isinstance(text_data, list):
             self.text_list = text_data
-            self.name_list = None
         elif isinstance(text_data, str):
             if text_data.endswith('.csv'):
                 df = pd.read_csv(text_data)
@@ -74,6 +75,14 @@ class TextDataset(Dataset):
                     raise ValueError("text_key not found in CSV columns")
                 if name_key and name_key in df.columns:
                     self.name_list = df[name_key].tolist()
+            elif text_data.endswith('.json'):
+                with open(text_data, 'r') as file:
+                    data = json.load(file)
+                self.text_list, self.name_list = self._parse_json_prompts(data, text_key, name_key)
+            elif text_data.endswith('.jsonl'):
+                with open(text_data, 'r') as file:
+                    data = [json.loads(line) for line in file if line.strip()]
+                self.text_list, self.name_list = self._parse_json_prompts(data, text_key, name_key)
             else:
                 # Handle text file
                 with open(text_data, 'r') as file:
@@ -98,6 +107,33 @@ class TextDataset(Dataset):
             else:
                 return str(idx), text
         return text
+
+    @staticmethod
+    def _parse_json_prompts(data, text_key=None, name_key="name"):
+        text_key = text_key or "caption"
+        if not isinstance(data, list):
+            raise ValueError("JSON prompt files must contain a list")
+
+        text_list = []
+        name_list = []
+        has_names = False
+        for idx, item in enumerate(data):
+            if isinstance(item, str):
+                text_list.append(item)
+                name_list.append(str(idx))
+            elif isinstance(item, dict):
+                if text_key not in item:
+                    raise ValueError(f"text_key '{text_key}' not found in JSON item")
+                text_list.append(item[text_key])
+                if name_key and name_key in item:
+                    has_names = True
+                    name_list.append(item[name_key])
+                else:
+                    name_list.append(str(idx))
+            else:
+                raise ValueError("JSON prompt items must be strings or objects")
+
+        return text_list, name_list if has_names else None
     
 @DATASETS.register_module()
 class T2IDataset(Dataset):

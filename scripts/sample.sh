@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 #############################################################
 # Image Generation Script - Generate CXR from trained diffusion model
 #############################################################
@@ -56,8 +57,14 @@ echo -e "${GREEN}===============================================${NC}"
 # Start generation
 echo -e "${GREEN}Starting image generation...${NC}"
 
+if [[ ! -f "${CKPT}" ]]; then
+    echo -e "${RED}Checkpoint not found:${NC} ${CKPT}"
+    echo "Place the downloaded checkpoint at ${CKPT}, or edit CKPT in this script."
+    exit 1
+fi
+
 # Run the generation command
-python -m torch.distributed.launch \
+torchrun \
     --nproc_per_node=${NUM_GPUS} \
     --master_port=${PORT} \
     tools/sample.py ${CONFIG_FILE} ${CKPT} \
@@ -68,5 +75,4 @@ python -m torch.distributed.launch \
 
 # Check generation results
 echo -e "${GREEN}Generation complete! Images saved to: ${OUTPUT_DIR}${NC}"
-
 
