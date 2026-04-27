@@ -31,7 +31,6 @@ The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-j
 | `finetune_impression_1024.pth` | Impression text | 1024 x 1024 | Use the matching 1024 config |
 | `finetune_impression_sex_age_race_512.pth` | Impression text + demographic attributes | 512 x 512 | Use prompts with the matching demographic format |
 | `finetune_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | Use the control-conditioned sampling path |
-| `finetune_control_chex_det10_1024.pth` | Control-conditioned generation | 1024 x 1024 | Use the control-conditioned sampling path |
 | `pretrain_256.pth` | Pretraining checkpoint | 256 x 256 | For research and fine-tuning |
 
 The quick start below demonstrates text-conditioned generation with `finetune_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
@@ -50,7 +49,6 @@ weights/
   finetune_impression_1024.pth
   finetune_impression_sex_age_race_512.pth
   finetune_control_siim_512.pth
-  finetune_control_chex_det10_1024.pth
   pretrain_256.pth
 ```
 
