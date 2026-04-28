@@ -25,12 +25,10 @@ ChexGen is a generative foundation model for chest radiography. It synthesizes c
 
 The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-jpg/), which requires credentialed access via [PhysioNet](https://physionet.org/). For that reason, access to model weights requires verification.
 
-| Checkpoint | Condition | Resolution | Config |
-| --- | --- | ---: | --- |
-| `pretrained_256.pth` | Pretraining checkpoint (starting point for all fine-tunes) | 256 x 256 | — |
-| `finetuned_impression_512.pth` | Impression text | 512 x 512 | [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py) |
-| `finetuned_demographic_impression_512.pth` | Impression text + demographic attributes | 512 x 512 | [`configs/sample/finetuned_demographic_impression_512.py`](configs/sample/finetuned_demographic_impression_512.py) |
-| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | [`configs/sample/finetuned_control_siim_512.py`](configs/sample/finetuned_control_siim_512.py) |
+- **`pretrained_256.pth`** — 256×256 pretraining checkpoint; starting point for all fine-tunes.
+- **`finetuned_impression_512.pth`** — 512×512, conditioned on impression text. Config: [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py).
+- **`finetuned_demographic_impression_512.pth`** — 512×512, impression text + sex/age/race demographics. Config: [`configs/sample/finetuned_demographic_impression_512.py`](configs/sample/finetuned_demographic_impression_512.py).
+- **`finetuned_control_siim_512.pth`** — 512×512, control-conditioned (SIIM pneumothorax mask). Config: [`configs/sample/finetuned_control_siim_512.py`](configs/sample/finetuned_control_siim_512.py).
 
 The quick start below demonstrates text-conditioned generation with `finetuned_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
 
@@ -71,23 +69,7 @@ pip install accelerate pynvml
 
 ### Encoders (VAE & T5)
 
-The pipeline uses two public encoders:
-
-| Asset | HF repo | Default cache location |
-| --- | --- | --- |
-| VAE (`ema`) | `stabilityai/sd-vae-ft-ema` | `~/.cache/huggingface/hub/` |
-| VAE (`mse`, optional via `--vae mse`) | `stabilityai/sd-vae-ft-mse` | `~/.cache/huggingface/hub/` |
-| T5 XXL | `DeepFloyd/t5-v1_1-xxl` | `~/.cache/IF_/t5-v1_1-xxl/` |
-
-Both samplers (`tools/sample*.py`) and the offline feature extractors (`tools/preprocess/*`) load these encoders. They auto-download on first use; on restricted clusters pre-stage them:
-
-```bash
-huggingface-cli login                          # one-time, if the repo is gated
-huggingface-cli download stabilityai/sd-vae-ft-ema
-huggingface-cli download DeepFloyd/t5-v1_1-xxl --local-dir ~/.cache/IF_/t5-v1_1-xxl
-```
-
-`radiffuser/models/t5.py` resolves T5 from `~/.cache/IF_/t5-v1_1-xxl/` (not the standard HF hub cache), so the `--local-dir` flag above is required for T5. To put it elsewhere, pass `dir_or_name=/abs/path/to/t5-v1_1-xxl` when constructing `T5Embedder`.
+The pipeline uses `stabilityai/sd-vae-ft-ema` (VAE) and `DeepFloyd/t5-v1_1-xxl` (T5). Both auto-download from Hugging Face on first use; nothing to do manually.
 
 ## Sampling
 
@@ -177,14 +159,28 @@ torchrun \
 
 #### Common Parameters
 
-| Parameter | Default | Description |
-| --- | ---: | --- |
-| `--cfg-scale` | `4.0` | Classifier-free guidance scale |
-| `--num-sampling-steps` | `100` | Number of diffusion denoising steps |
-| `--seed` | `0` | Random seed |
-| `--batch-size` | `1` | Batch size per GPU. Use `1` for best fidelity; larger values run faster but route cross-attention through `xformers` `BlockDiagonalMask`, whose differing reduction order can introduce small numerical drift across the 100 sampling steps. |
-| `--text-prompt-file` | `None` | Prompt file path |
-| `--text-prompt-key` | `impression` | Prompt field for CSV/JSON/JSONL files |
+- `--cfg-scale` (default `4.0`) — Classifier-free guidance scale.
+- `--num-sampling-steps` (default `100`) — Number of diffusion denoising steps.
+- `--seed` (default `0`) — Random seed.
+- `--batch-size` (default `1`) — Batch size per GPU. Use `1` for best fidelity; larger values run faster but route cross-attention through `xformers` `BlockDiagonalMask`, with small numerical drift across the 100 sampling steps.
+- `--text-prompt-file` (default `None`) — Prompt file path.
+- `--text-prompt-key` (default `impression`) — Prompt field for CSV/JSON/JSONL files.
+
+#### Demographic-conditioned
+
+`finetuned_demographic_impression_512.pth` accepts impressions prefixed with sex/age/race attributes. The bundled CSV [`data/mimic_val_p19_demographic_impression_example.csv`](data/mimic_val_p19_demographic_impression_example.csv) shows the expected `impression` format:
+
+```csv
+name,Finding Labels,impression
+chest_sar_001.png,No Finding,"sex:Male, age:71.0, race:Black. No acute findings in the chest."
+chest_sar_002.png,Cardiomegaly,"sex:Male, age:61.0, race:White. Mild cardiomegaly. No signs of pneumonia or edema."
+```
+
+Run via the wrapper:
+
+```bash
+bash scripts/sample_demographic_impression.sh
+```
 
 ### Control-Conditioned Generation
 
