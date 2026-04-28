@@ -30,7 +30,7 @@ The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-j
 | `pretrained_256.pth` | Pretraining checkpoint | 256 x 256 | TBD |
 | `finetuned_impression_512.pth` | Impression text | 512 x 512 | [`configs/finetuned_impression_512.py`](configs/finetuned_impression_512.py) |
 | `finetuned_demographic_impression_512.pth` | Impression text + demographic attributes | 512 x 512 | [`configs/finetuned_demographic_impression_512.py`](configs/finetuned_demographic_impression_512.py) |
-| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | TBD |
+| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | [`configs/finetuned_control_siim_512.py`](configs/finetuned_control_siim_512.py) |
 
 The quick start below demonstrates text-conditioned generation with `finetuned_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
 
@@ -162,19 +162,36 @@ torchrun \
 | `--text-prompt-file` | `None` | Prompt file path |
 | `--text-prompt-key` | `impression` | Prompt field for CSV/JSON/JSONL files |
 
+## Control-Conditioned Generation
+
+`finetuned_control_siim_512.pth` adds spatial conditioning on a pneumothorax segmentation mask via the `ControlT2IDiT` wrapper (PixArt-style ControlNet copy of the first 13 DiT blocks). It uses a different entry point — `tools/sample_control.py` — and a CSV with three columns: `name`, `impression`, `mask`.
+
+A ready-to-run example ships with the repo:
+
+- prompts: [`data/siim_control_example.csv`](data/siim_control_example.csv) (10 SIIM pneumothorax cases)
+- masks: `data/siim_masks/*.png` (binary masks keyed by SIIM dicom UID)
+
+```bash
+bash scripts/sample_control_siim.sh                        # default CSV + masks under data/siim_masks
+bash scripts/sample_control_siim.sh path/to/prompts.csv    # custom CSV
+COND_DIR=/abs/path/to/masks bash scripts/sample_control_siim.sh prompts.csv
+```
+
+The mask column may hold either a path relative to `COND_DIR` (default `data/siim_masks/`) or an absolute path. Override the column names with `TEXT_KEY` / `COND_KEY` env vars if your CSV uses different headers. Each generated `<name>.png` is paired with a `<name>_mask.png` sidecar (the resized 512×512 input mask) so input/output correspondence is preserved.
+
 ## Project Structure
 
 ```text
 ChexGen/
   configs/            Model configurations
-  data/               Example prompt CSV (MIMIC-CXR validation slice)
+  data/               Example prompt CSVs and SIIM masks
   radiffuser/
     models/           DiT, T5 text encoder, embedders, control modules
     diffusion/        Gaussian diffusion and timestep respacing
     datasets/         Text and text-to-image dataset loaders
     utils/            Checkpoint loading, logging, synchronization
-  scripts/            Shell scripts for generation (sample_impression.sh, sample_csv.sh, sample_demographic_impression.sh)
-  tools/              Entry-point scripts
+  scripts/            Shell scripts (sample_impression.sh, sample_csv.sh, sample_demographic_impression.sh, sample_control_siim.sh)
+  tools/              Entry-point scripts (sample.py, sample_control.py)
 ```
 
 ## Intended Use and Limitations

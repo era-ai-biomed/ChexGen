@@ -75,7 +75,11 @@ class ControlT2IDiT(Module):
 
     def forward_c(self, c):
         self.h, self.w = c.shape[-2]//self.patch_size, c.shape[-1]//self.patch_size
-        pos_embed = torch.from_numpy(get_2d_sincos_pos_embed(self.pos_embed.shape[-1], (self.h, self.w), interpolation_scale=self.pos_embed_scale, base_size=self.base_size)).unsqueeze(0).to(c.device).to(self.dtype)
+        pos_embed = get_2d_sincos_pos_embed(
+            self.pos_embed.shape[-1], (self.h, self.w),
+            interpolation_scale=self.pos_embed_scale, base_size=self.base_size,
+            output_type='pt',
+        ).unsqueeze(0).to(c.device).to(self.dtype)
         return self.x_embedder(c) + pos_embed if c is not None else c
 
     # def forward(self, x, t, c, **kwargs):

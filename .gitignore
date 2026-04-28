@@ -1,5 +1,7 @@
 data/*
 !data/*.csv
+!data/siim_masks/
+!data/siim_masks/**
 *.pyc
 __pycache__/
 .pytest_cache/
