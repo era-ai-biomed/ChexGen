@@ -74,7 +74,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-Key dependencies include PyTorch, torchvision, Transformers, Diffusers, xFormers, MMEngine, timm, and sentencepiece. The sampling script expects an NVIDIA GPU with CUDA and runs through PyTorch distributed sampling with the NCCL backend.
+Key dependencies include PyTorch, torchvision, Transformers, Diffusers, xFormers, MMEngine, timm, and sentencepiece. Sampling requires an NVIDIA GPU with CUDA.
 
 For fine-tuning, additionally install `accelerate` and `pynvml`:
 
@@ -92,7 +92,7 @@ ChexGen ships two sampling paths: text-to-image (`tools/sample.py`) and mask-con
 
 ### Text-to-image
 
-The default text-to-X-ray path uses `weights/finetuned_impression_512.pth` paired with [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py). The sections below all use this 512 setup as the running example; swap in another checkpoint + matching config to generate with a different release.
+The default text-to-X-ray path uses `weights/finetuned_impression_512.pth` paired with [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py). Examples below use this 512 impression setup; swap in another checkpoint + matching config for a different release.
 
 #### Quick Start
 
@@ -161,7 +161,7 @@ The default `--text-prompt-key` is `impression`; override only if your CSV uses 
 
 #### Multi-GPU Sampling
 
-The sampler uses `DistributedSampler` to shard prompts across ranks, so larger prompt files can be parallelised across GPUs. Set `--nproc_per_node` to the number of available GPUs (and update `NUM_GPUS` in `scripts/sample_impression.sh` if you use the wrapper):
+The sampler uses `DistributedSampler` to shard prompts across ranks, so larger prompt files can be parallelised across GPUs. Set `--nproc_per_node` to the number of available GPUs (and update `NUM_GPUS` in the wrapper you're using):
 
 ```bash
 torchrun \
@@ -197,7 +197,7 @@ Run via the wrapper:
 bash scripts/sample_demographic_impression.sh
 ```
 
-### Control-Conditioned Generation
+### Mask-conditioned
 
 `finetuned_control_siim_512.pth` adds spatial conditioning on a pneumothorax segmentation mask via the `ControlT2IDiT` wrapper. It uses a different entry point — `tools/sample_control.py` — and a CSV with three columns: `name`, `impression`, `mask`.
 
