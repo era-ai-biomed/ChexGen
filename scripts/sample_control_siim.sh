@@ -22,8 +22,8 @@ NC='\033[0m'
 
 # Configuration parameters
 NUM_GPUS=1
-TORCHRUN="/scratch/m000071/yfj/miniconda3/envs/chexgen/bin/torchrun"
-CONFIG_FILE="configs/finetuned_control_siim_512.py"
+TORCHRUN=torchrun
+CONFIG_FILE="configs/sample/finetuned_control_siim_512.py"
 CKPT="weights/finetuned_control_siim_512.pth"
 PROMPT_FILE="${1:-data/siim_control_example.csv}"
 TEXT_KEY="${TEXT_KEY:-impression}"

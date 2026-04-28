@@ -15,8 +15,8 @@ NC='\033[0m'
 
 # Configuration parameters
 NUM_GPUS=1
-TORCHRUN="/scratch/m000071/yfj/miniconda3/envs/chexgen/bin/torchrun"
-CONFIG_FILE="configs/finetuned_demographic_impression_512.py"
+TORCHRUN=torchrun
+CONFIG_FILE="configs/sample/finetuned_demographic_impression_512.py"
 CKPT="weights/finetuned_demographic_impression_512.pth"
 PROMPT_FILE="${1:-data/mimic_val_p19_demographic_impression_example.csv}"
 OUTPUT_DIR="visualization"

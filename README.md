@@ -27,10 +27,10 @@ The training data includes [MIMIC-CXR](https://physionet.org/content/mimic-cxr-j
 
 | Checkpoint | Condition | Resolution | Config |
 | --- | --- | ---: | --- |
-| `pretrained_256.pth` | Pretraining checkpoint | 256 x 256 | TBD |
-| `finetuned_impression_512.pth` | Impression text | 512 x 512 | [`configs/finetuned_impression_512.py`](configs/finetuned_impression_512.py) |
-| `finetuned_demographic_impression_512.pth` | Impression text + demographic attributes | 512 x 512 | [`configs/finetuned_demographic_impression_512.py`](configs/finetuned_demographic_impression_512.py) |
-| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | [`configs/finetuned_control_siim_512.py`](configs/finetuned_control_siim_512.py) |
+| `pretrained_256.pth` | Pretraining checkpoint (starting point for all fine-tunes) | 256 x 256 | — |
+| `finetuned_impression_512.pth` | Impression text | 512 x 512 | [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py) |
+| `finetuned_demographic_impression_512.pth` | Impression text + demographic attributes | 512 x 512 | [`configs/sample/finetuned_demographic_impression_512.py`](configs/sample/finetuned_demographic_impression_512.py) |
+| `finetuned_control_siim_512.pth` | Control-conditioned generation | 512 x 512 | [`configs/sample/finetuned_control_siim_512.py`](configs/sample/finetuned_control_siim_512.py) |
 
 The quick start below demonstrates text-conditioned generation with `finetuned_impression_512.pth`. Other checkpoints should be paired with their matching config and input format.
 
@@ -63,24 +63,48 @@ pip install -e .
 
 Key dependencies include PyTorch, torchvision, Transformers, Diffusers, xFormers, MMEngine, timm, and sentencepiece. The sampling script expects an NVIDIA GPU with CUDA and runs through PyTorch distributed sampling with the NCCL backend.
 
-The first run may download additional public model components:
-
-- `DeepFloyd/t5-v1_1-xxl` for text embeddings.
-- `stabilityai/sd-vae-ft-ema` or `stabilityai/sd-vae-ft-mse` for latent decoding.
-
-If you are running on a restricted cluster, pre-download these assets into the Hugging Face cache before launching sampling.
-
-## Text to Xray Generation
-
-The default text-to-X-ray path uses `weights/finetuned_impression_512.pth` paired with [`configs/finetuned_impression_512.py`](configs/finetuned_impression_512.py). The sections below all use this 512 setup as the running example; swap in another checkpoint + matching config to generate at a different resolution (see [Other Resolutions](#other-resolutions)).
-
-### Quick Start
-
-After placing `weights/finetuned_impression_512.pth`, pick one of the wrappers:
+For training, additionally install `accelerate` and `pynvml`:
 
 ```bash
-bash scripts/sample_impression.sh        # five built-in impression prompts
-bash scripts/sample_csv.sh    # read prompts from data/mimic_val_p19_impression_example.csv
+pip install accelerate pynvml
+```
+
+### Encoders (VAE & T5)
+
+The pipeline uses two public encoders:
+
+| Asset | HF repo | Default cache location |
+| --- | --- | --- |
+| VAE (`ema`) | `stabilityai/sd-vae-ft-ema` | `~/.cache/huggingface/hub/` |
+| VAE (`mse`, optional via `--vae mse`) | `stabilityai/sd-vae-ft-mse` | `~/.cache/huggingface/hub/` |
+| T5 XXL | `DeepFloyd/t5-v1_1-xxl` | `~/.cache/IF_/t5-v1_1-xxl/` |
+
+Both samplers (`tools/sample*.py`) and the offline feature extractors (`tools/preprocess/*`) load these encoders. They auto-download on first use; on restricted clusters pre-stage them:
+
+```bash
+huggingface-cli login                          # one-time, if the repo is gated
+huggingface-cli download stabilityai/sd-vae-ft-ema
+huggingface-cli download DeepFloyd/t5-v1_1-xxl --local-dir ~/.cache/IF_/t5-v1_1-xxl
+```
+
+`radiffuser/models/t5.py` resolves T5 from `~/.cache/IF_/t5-v1_1-xxl/` (not the standard HF hub cache), so the `--local-dir` flag above is required for T5. To put it elsewhere, pass `dir_or_name=/abs/path/to/t5-v1_1-xxl` when constructing `T5Embedder`.
+
+## Sampling
+
+ChexGen ships two sampling paths: text-to-image (`tools/sample.py`) and mask-conditioned generation (`tools/sample_control.py`).
+
+### Text-to-image
+
+The default text-to-X-ray path uses `weights/finetuned_impression_512.pth` paired with [`configs/sample/finetuned_impression_512.py`](configs/sample/finetuned_impression_512.py). The sections below all use this 512 setup as the running example; swap in another checkpoint + matching config to generate with a different release.
+
+#### Quick Start
+
+After placing the matching checkpoint(s) under `weights/`, pick one of the wrappers:
+
+```bash
+bash scripts/sample_impression.sh                # finetuned_impression_512.pth + 5 built-in prompts
+bash scripts/sample_csv.sh                       # finetuned_impression_512.pth + data/mimic_val_p19_impression_example.csv
+bash scripts/sample_demographic_impression.sh    # finetuned_demographic_impression_512.pth + data/mimic_val_p19_demographic_impression_example.csv
 ```
 
 `sample_csv.sh` also accepts a custom CSV path:
@@ -91,7 +115,7 @@ bash scripts/sample_csv.sh path/to/your_prompts.csv
 
 Outputs land in `visualization/` along with a `prompts.txt` mapping each image to its source prompt.
 
-### Direct Sampler Invocation
+#### Direct Sampler Invocation
 
 For one-off prompts or non-default flags, call `tools/sample.py` directly:
 
@@ -99,7 +123,7 @@ For one-off prompts or non-default flags, call `tools/sample.py` directly:
 torchrun \
     --nproc_per_node=1 \
     --master_port=12345 \
-    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
+    tools/sample.py configs/sample/finetuned_impression_512.py weights/finetuned_impression_512.pth \
     --work-dir output/ \
     --text-prompt "Moderate cardiomegaly with mild vascular congestion." \
     --cfg-scale 4.0 \
@@ -107,7 +131,7 @@ torchrun \
     --seed 1234
 ```
 
-### Prompt Files
+#### Prompt Files
 
 Pass `--text-prompt-file` instead of `--text-prompt` to batch over a file:
 
@@ -115,7 +139,7 @@ Pass `--text-prompt-file` instead of `--text-prompt` to batch over a file:
 torchrun \
     --nproc_per_node=1 \
     --master_port=12345 \
-    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
+    tools/sample.py configs/sample/finetuned_impression_512.py weights/finetuned_impression_512.pth \
     --work-dir output/ \
     --text-prompt-file prompts.csv
 ```
@@ -138,7 +162,7 @@ chest_003.png,Pleural Effusion,New small loculated pleural effusion within the m
 
 The default `--text-prompt-key` is `impression`; override only if your CSV uses a different column name. If the `name` column is omitted, outputs are saved as `0.png`, `1.png`, ... by row index.
 
-### Multi-GPU Sampling
+#### Multi-GPU Sampling
 
 The sampler uses `DistributedSampler` to shard prompts across ranks, so larger prompt files can be parallelised across GPUs. Set `--nproc_per_node` to the number of available GPUs (and update `NUM_GPUS` in `scripts/sample_impression.sh` if you use the wrapper):
 
@@ -146,12 +170,12 @@ The sampler uses `DistributedSampler` to shard prompts across ranks, so larger p
 torchrun \
     --nproc_per_node=4 \
     --master_port=12345 \
-    tools/sample.py configs/finetuned_impression_512.py weights/finetuned_impression_512.pth \
+    tools/sample.py configs/sample/finetuned_impression_512.py weights/finetuned_impression_512.pth \
     --work-dir output/ \
     --text-prompt-file prompts.csv
 ```
 
-### Common Parameters
+#### Common Parameters
 
 | Parameter | Default | Description |
 | --- | ---: | --- |
@@ -162,7 +186,7 @@ torchrun \
 | `--text-prompt-file` | `None` | Prompt file path |
 | `--text-prompt-key` | `impression` | Prompt field for CSV/JSON/JSONL files |
 
-## Control-Conditioned Generation
+### Control-Conditioned Generation
 
 `finetuned_control_siim_512.pth` adds spatial conditioning on a pneumothorax segmentation mask via the `ControlT2IDiT` wrapper (PixArt-style ControlNet copy of the first 13 DiT blocks). It uses a different entry point — `tools/sample_control.py` — and a CSV with three columns: `name`, `impression`, `mask`.
 
@@ -179,19 +203,125 @@ COND_DIR=/abs/path/to/masks bash scripts/sample_control_siim.sh prompts.csv
 
 The mask column may hold either a path relative to `COND_DIR` (default `data/siim_masks/`) or an absolute path. Override the column names with `TEXT_KEY` / `COND_KEY` env vars if your CSV uses different headers. Each generated `<name>.png` is paired with a `<name>_mask.png` sidecar (the resized 512×512 input mask) so input/output correspondence is preserved.
 
+## Training
+
+All fine-tuning runs start from the **256×256 pretraining checkpoint** `weights/pretrained_256.pth`. When the resolution changes (e.g. 256 → 512 / 1024) `pos_embed` and `y_embedder.y_embedding` are re-initialized; every other DiT weight is loaded in. Make sure `pretrained_256.pth` is placed under `weights/` before launching a fine-tune.
+
+A reference text-to-image config ships at [`configs/train/mimic-example.py`](configs/train/mimic-example.py); it sets `pretrained = 'weights/pretrained_256.pth'`. Copy and edit it for your dataset.
+
+### Data Preparation
+
+Training reads **pre-extracted** features (VAE image latents + T5 caption embeddings), not raw pixels and text. Run the offline pipeline once per dataset before launching `tools/train.py` or `tools/train_control.py`.
+
+#### 1. VAE-encode images
+
+```bash
+python tools/preprocess/image_preprocess.py \
+    --data_path        /abs/path/to/raw/images          # directory of .png/.jpg files
+    --image_size       512                              # match your model's resolution
+    --batch_size       20 \
+    --embedding_save_dir /abs/path/to/image_embedding_512 \
+    --parts 1 --index 0                                 # split for multi-GPU sharding
+```
+
+Each input image becomes `<embedding_save_dir>/<name>.npz` with key `image` (4×H/8×W/8 latent).
+
+#### 2. T5-encode captions
+
+```bash
+python tools/preprocess/caption_preprocess.py \
+    --csv_dir          /abs/path/to/captions.csv        # must have a 'name' column
+    --key              impression                       # CSV column for the prompt text
+    --token-nums       120                              # match model.token_num in the train config
+    --embedding_save_dir /abs/path/to/caption_embedding \
+    --s3-bucket        ""                               # leave empty for local disk
+```
+
+Outputs `<name>.npz` with keys `caption_embedding` (token_num × 4096) and `caption_mask` (token_num bool).
+
+#### 3. (Control models only) VAE-encode masks
+
+Re-run `image_preprocess.py` against the mask directory:
+
+```bash
+python tools/preprocess/image_preprocess.py \
+    --data_path        /abs/path/to/masks \
+    --image_size       512 \
+    --embedding_save_dir /abs/path/to/cond_embedding_512 \
+    --parts 1 --index 0
+```
+
+#### 4. Build the data list
+
+`T2IDataset` consumes a flat `.txt` where each line is space-separated paths under a single root (`s3_bucket` in the config). Edit [`tools/preprocess/generate_data_list_file.py`](tools/preprocess/generate_data_list_file.py) to point at your embedding dirs:
+
+```python
+base_dir = "/abs/path/to/data/"
+dir_list = ["/abs/path/to/data/mimic-cxr"]
+target_folders = ["image_embedding_512", "caption_embedding"]   # add cond_embedding_512 for control
+save_file = "/abs/path/to/data/meta/second_stage_impression_512.txt"
+```
+
+Then run:
+
+```bash
+python tools/preprocess/generate_data_list_file.py
+```
+
+The resulting `.txt` becomes `dataloader.dataset.data_list_file` in your training config; the `s3_bucket` field is the prefix that gets stripped/re-prepended.
+
+### Text-to-image (`tools/train.py`)
+
+```bash
+# single GPU
+bash scripts/train.sh configs/train/mimic-example.py
+
+# multi-GPU
+NUM_GPUS=4 bash scripts/train.sh configs/train/mimic-example.py
+```
+
+### Control / mask-conditioned (`tools/train_control.py`)
+
+`ControlT2IDiT` wraps a frozen base DiT with a trainable copy of the first 13 blocks (PixArt-style ControlNet). For control fine-tunes, the recommended starting point is still `weights/pretrained_256.pth` (matches how the released `finetuned_control_siim_512.pth` was trained). Set `pretrained` in the config or pass `--pretrained` on the CLI:
+
+```bash
+NUM_GPUS=4 bash scripts/train_control.sh configs/train/your_control_config.py \
+    --pretrained weights/pretrained_256.pth
+```
+
+The dataset must include cond paths — set `dataloader.dataset.use_cond=True` in the config and make sure the data list (step 4 above) has 3 columns per line (image, text, cond).
+
+### Resume
+
+Both wrappers honor `--resume`:
+
+```bash
+NUM_GPUS=4 bash scripts/train.sh configs/train/mimic-example.py \
+    --resume work_dirs/mimic-example/epoch_100_step_100000.pth
+```
+
+`auto-resume` is on by default — re-running the same command picks up the latest `.pth` in `work_dir` and ignores `pretrained`.
+
 ## Project Structure
 
 ```text
 ChexGen/
-  configs/            Model configurations
+  configs/
+    sample/           Inference configs (one per released checkpoint)
+    train/            Training configs (mimic-example.py, ...)
   data/               Example prompt CSVs and SIIM masks
   radiffuser/
     models/           DiT, T5 text encoder, embedders, control modules
     diffusion/        Gaussian diffusion and timestep respacing
     datasets/         Text and text-to-image dataset loaders
     utils/            Checkpoint loading, logging, synchronization
-  scripts/            Shell scripts (sample_impression.sh, sample_csv.sh, sample_demographic_impression.sh, sample_control_siim.sh)
-  tools/              Entry-point scripts (sample.py, sample_control.py)
+  scripts/            Shell wrappers (sample_*.sh, train.sh, train_control.sh)
+  tools/
+    sample.py         Text-to-image inference
+    sample_control.py Mask-conditioned inference
+    train.py          Text-to-image training
+    train_control.py  Mask-conditioned training
+    preprocess/       Offline feature extractors (image / caption / data list)
 ```
 
 ## Intended Use and Limitations

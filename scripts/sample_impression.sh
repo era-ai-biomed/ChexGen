@@ -13,8 +13,8 @@ NC='\033[0m' # No Color
 
 # Configuration parameters
 NUM_GPUS=1
-TORCHRUN="/scratch/m000071/yfj/miniconda3/envs/chexgen/bin/torchrun"
-CONFIG_FILE="configs/finetuned_impression_512.py"
+TORCHRUN=torchrun
+CONFIG_FILE="configs/sample/finetuned_impression_512.py"
 CKPT="weights/finetuned_impression_512.pth"
 OUTPUT_DIR="visualization"
 PORT=12345
