@@ -63,7 +63,7 @@ pip install -e .
 
 Key dependencies include PyTorch, torchvision, Transformers, Diffusers, xFormers, MMEngine, timm, and sentencepiece. The sampling script expects an NVIDIA GPU with CUDA and runs through PyTorch distributed sampling with the NCCL backend.
 
-For training, additionally install `accelerate` and `pynvml`:
+For fine-tuning, additionally install `accelerate` and `pynvml`:
 
 ```bash
 pip install accelerate pynvml
@@ -203,7 +203,9 @@ COND_DIR=/abs/path/to/masks bash scripts/sample_control_siim.sh prompts.csv
 
 The mask column may hold either a path relative to `COND_DIR` (default `data/siim_masks/`) or an absolute path. Override the column names with `TEXT_KEY` / `COND_KEY` env vars if your CSV uses different headers. Each generated `<name>.png` is paired with a `<name>_mask.png` sidecar (the resized 512×512 input mask) so input/output correspondence is preserved.
 
-## Training
+## Fine-tuning
+
+> **Note:** the fine-tuning code below has been cleaned up for release but not re-run end-to-end after the reorganization. If anything breaks, please open an issue or reach out to the authors.
 
 All fine-tuning runs start from the **256×256 pretraining checkpoint** `weights/pretrained_256.pth`. When the resolution changes (e.g. 256 → 512 / 1024) `pos_embed` and `y_embedder.y_embedding` are re-initialized; every other DiT weight is loaded in. Make sure `pretrained_256.pth` is placed under `weights/` before launching a fine-tune.
 
@@ -211,7 +213,7 @@ A reference text-to-image config ships at [`configs/train/mimic-example.py`](con
 
 ### Data Preparation
 
-Training reads **pre-extracted** features (VAE image latents + T5 caption embeddings), not raw pixels and text. Run the offline pipeline once per dataset before launching `tools/train.py` or `tools/train_control.py`.
+Fine-tuning reads **pre-extracted** features (VAE image latents + T5 caption embeddings), not raw pixels and text. Run the offline pipeline once per dataset before launching `tools/train.py` or `tools/train_control.py`.
 
 #### 1. VAE-encode images
 
@@ -265,7 +267,7 @@ python tools/preprocess/generate_data_list_file.py \
 
 For control models, append `cond_embedding_512` to `--target-folders`.
 
-The resulting `.txt` becomes `dataloader.dataset.data_list_file` in your training config; the `s3_bucket` field is the prefix that gets stripped/re-prepended.
+The resulting `.txt` becomes `dataloader.dataset.data_list_file` in your fine-tuning config; the `s3_bucket` field is the prefix that gets stripped/re-prepended.
 
 ### Text-to-image (`tools/train.py`)
 
@@ -305,7 +307,7 @@ NUM_GPUS=4 bash scripts/train.sh configs/train/mimic-example.py \
 ChexGen/
   configs/
     sample/           Inference configs (one per released checkpoint)
-    train/            Training configs (mimic-example.py, ...)
+    train/            Fine-tuning configs (mimic-example.py, ...)
   data/               Example prompt CSVs and SIIM masks
   radiffuser/
     models/           DiT, T5 text encoder, embedders, control modules
@@ -316,8 +318,8 @@ ChexGen/
   tools/
     sample.py         Text-to-image inference
     sample_control.py Mask-conditioned inference
-    train.py          Text-to-image training
-    train_control.py  Mask-conditioned training
+    train.py          Text-to-image fine-tuning
+    train_control.py  Mask-conditioned fine-tuning
     preprocess/       Offline feature extractors (image / caption / data list)
 ```
 
