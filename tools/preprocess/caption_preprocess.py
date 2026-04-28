@@ -55,11 +55,6 @@ if __name__ == '__main__':
                         type=str,
                         default='caption',
                         help='Key of the caption in the CSV file')
-    parser.add_argument('--s3-bucket',
-                    type=str,
-                    default='',
-                    help='Optional s3:// URI for petrel backend; leave empty for local disk.')
-    
     args = parser.parse_args()
 
     try:
@@ -90,8 +85,7 @@ if __name__ == '__main__':
     pbar = tqdm(total=len(subset), desc='Processing captions')
 
     
-    if not os.path.exists(args.embedding_save_dir) and args.s3_bucket is not None:
-        os.makedirs(args.embedding_save_dir)
+    os.makedirs(args.embedding_save_dir, exist_ok=True)
 
     mask_nums = []
 
@@ -110,8 +104,6 @@ if __name__ == '__main__':
 
         for j, (image_name, _) in enumerate(batch):
             save_path = os.path.join(args.embedding_save_dir, f"{image_name}.npz")
-            if args.s3_bucket is not None:
-                save_path = os.path.join(args.s3_bucket, save_path)
 
             # if not file_client.contains(save_path):
             #     with io.BytesIO() as f:

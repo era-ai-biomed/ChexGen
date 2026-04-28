@@ -2,12 +2,9 @@
 # Example MIMIC-CXR fine-tuning config (text -> image, 512x512).
 #
 # Before training, run tools/preprocess/* to extract VAE image latents
-# and T5 caption embeddings, then build a data list. Edit the fields
-# below to point at those outputs:
-#   - data_list_file: .txt where each line is `<image_npz>\t<text_npz>`
-#     (relative paths under s3_bucket).
-#   - s3_bucket: directory prefix prepended to those relative paths,
-#     OR an s3:// URI when file_client_args.backend == "petrel".
+# and T5 caption embeddings, then build a data list. Point
+# `data_list_file` below at that .txt (each line: `<image_npz> <text_npz>`,
+# absolute paths or paths resolvable from cwd).
 #############################################################
 
 model = dict(
@@ -34,7 +31,6 @@ dataloader = dict(
         transform=None,
         data_list_file='data/meta/second_stage_impression_512.txt',
         file_client_args={'backend': 'disk'},
-        s3_bucket='data/mimic_cxr_512',
     ),
 )
 

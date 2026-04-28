@@ -1,8 +1,7 @@
 """Build the flat data-list .txt consumed by T2IDataset / T2IControlDataset.
 
-Every line is `<image>.npz <text>.npz [<cond>.npz]`, with the common
-``--base-dir`` prefix stripped so the runtime config can re-prepend it
-through ``dataloader.dataset.s3_bucket``.
+Every emitted line is `<image>.npz <text>.npz [<cond>.npz]` — full paths
+that the dataset loader opens directly.
 """
 import argparse
 import os
@@ -12,10 +11,8 @@ import mmengine
 
 def main():
     parser = argparse.ArgumentParser(description="Build T2IDataset data list.")
-    parser.add_argument("--base-dir", type=str, required=True,
-                        help="Common prefix stripped from every emitted path.")
     parser.add_argument("--dir-list", type=str, nargs="+", required=True,
-                        help="One or more dataset directories under --base-dir.")
+                        help="One or more dataset directories that contain the embedding subfolders.")
     parser.add_argument("--target-folders", type=str, nargs="+",
                         default=["image_embedding_512", "caption_embedding"],
                         help="Embedding subfolders under each dir; add "
@@ -39,7 +36,7 @@ def main():
                 if not os.path.exists(embed_path):
                     exist = False
                     print(f"{embed_path} not exist!")
-                data.append(embed_path.replace(args.base_dir, ""))
+                data.append(embed_path)
             if exist:
                 sub_data_list.append(data)
         data_list.extend(sub_data_list)

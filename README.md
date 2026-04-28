@@ -231,8 +231,7 @@ python tools/preprocess/caption_preprocess.py \
     --csv_dir          /abs/path/to/captions.csv        # must have a 'name' column
     --key              impression                       # CSV column for the prompt text
     --token-nums       120                              # match model.token_num in the train config
-    --embedding_save_dir /abs/path/to/caption_embedding \
-    --s3-bucket        ""                               # leave empty for local disk
+    --embedding_save_dir /abs/path/to/caption_embedding
 ```
 
 Outputs `<name>.npz` with keys `caption_embedding` (token_num × 4096) and `caption_mask` (token_num bool).
@@ -251,19 +250,16 @@ python tools/preprocess/image_preprocess.py \
 
 #### 4. Build the data list
 
-`T2IDataset` consumes a flat `.txt` where each line is space-separated paths under a single root (`s3_bucket` in the config):
+`T2IDataset` consumes a flat `.txt` where each line is space-separated paths to the embedding files:
 
 ```bash
 python tools/preprocess/generate_data_list_file.py \
-    --base-dir       /abs/path/to/data/ \
     --dir-list       /abs/path/to/data/mimic-cxr \
     --target-folders image_embedding_512 caption_embedding \
     --save-file      /abs/path/to/data/meta/second_stage_impression_512.txt
 ```
 
-For control models, append `cond_embedding_512` to `--target-folders`.
-
-The resulting `.txt` becomes `dataloader.dataset.data_list_file` in your fine-tuning config; the `s3_bucket` field is the prefix that gets stripped/re-prepended.
+For control models, append `cond_embedding_512` to `--target-folders`. Point `dataloader.dataset.data_list_file` at the resulting `.txt` in your fine-tuning config.
 
 ### Text-to-image (`tools/train.py`)
 
