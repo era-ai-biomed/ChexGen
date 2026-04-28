@@ -199,7 +199,7 @@ bash scripts/sample_demographic_impression.sh
 
 ### Control-Conditioned Generation
 
-`finetuned_control_siim_512.pth` adds spatial conditioning on a pneumothorax segmentation mask via the `ControlT2IDiT` wrapper (PixArt-style ControlNet copy of the first 13 DiT blocks). It uses a different entry point — `tools/sample_control.py` — and a CSV with three columns: `name`, `impression`, `mask`.
+`finetuned_control_siim_512.pth` adds spatial conditioning on a pneumothorax segmentation mask via the `ControlT2IDiT` wrapper. It uses a different entry point — `tools/sample_control.py` — and a CSV with three columns: `name`, `impression`, `mask`.
 
 A ready-to-run example ships with the repo:
 
@@ -288,7 +288,7 @@ NUM_GPUS=4 bash scripts/train.sh configs/train/mimic-example.py
 
 ### Control / mask-conditioned (`tools/train_control.py`)
 
-`ControlT2IDiT` wraps a frozen base DiT with a trainable copy of the first 13 blocks (PixArt-style ControlNet). For control fine-tunes, the recommended starting point is still `weights/pretrained_256.pth` (matches how the released `finetuned_control_siim_512.pth` was trained). Set `pretrained` in the config or pass `--pretrained` on the CLI:
+`ControlT2IDiT` wraps a frozen base DiT with a trainable copy of the first 13 blocks. For control fine-tunes, the recommended starting point is still `weights/pretrained_256.pth` (matches how the released `finetuned_control_siim_512.pth` was trained). Set `pretrained` in the config or pass `--pretrained` on the CLI:
 
 ```bash
 NUM_GPUS=4 bash scripts/train_control.sh configs/train/your_control_config.py \
