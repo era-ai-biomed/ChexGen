@@ -253,20 +253,17 @@ python tools/preprocess/image_preprocess.py \
 
 #### 4. Build the data list
 
-`T2IDataset` consumes a flat `.txt` where each line is space-separated paths under a single root (`s3_bucket` in the config). Edit [`tools/preprocess/generate_data_list_file.py`](tools/preprocess/generate_data_list_file.py) to point at your embedding dirs:
-
-```python
-base_dir = "/abs/path/to/data/"
-dir_list = ["/abs/path/to/data/mimic-cxr"]
-target_folders = ["image_embedding_512", "caption_embedding"]   # add cond_embedding_512 for control
-save_file = "/abs/path/to/data/meta/second_stage_impression_512.txt"
-```
-
-Then run:
+`T2IDataset` consumes a flat `.txt` where each line is space-separated paths under a single root (`s3_bucket` in the config):
 
 ```bash
-python tools/preprocess/generate_data_list_file.py
+python tools/preprocess/generate_data_list_file.py \
+    --base-dir       /abs/path/to/data/ \
+    --dir-list       /abs/path/to/data/mimic-cxr \
+    --target-folders image_embedding_512 caption_embedding \
+    --save-file      /abs/path/to/data/meta/second_stage_impression_512.txt
 ```
+
+For control models, append `cond_embedding_512` to `--target-folders`.
 
 The resulting `.txt` becomes `dataloader.dataset.data_list_file` in your training config; the `s3_bucket` field is the prefix that gets stripped/re-prepended.
 

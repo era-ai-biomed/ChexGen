@@ -1,40 +1,37 @@
-import mmengine
+"""Build the flat data-list .txt consumed by T2IDataset / T2IControlDataset.
+
+Every line is `<image>.npz <text>.npz [<cond>.npz]`, with the common
+``--base-dir`` prefix stripped so the runtime config can re-prepend it
+through ``dataloader.dataset.s3_bucket``.
+"""
+import argparse
 import os
 
-if __name__ == '__main__':
+import mmengine
 
-    base_dir = "/mnt/petrelfs/jiyuanfeng.p/data/"
 
-    dir_list = [
-        # '/mnt/proj76/ylchen/datasets/cxr14',
-        # '/mnt/proj76/ylchen/datasets/chexpert',
-        # '/mnt/proj76/ylchen/datasets/padchest',
-        # '/mnt/proj76/ylchen/datasets/ranzcr',
-        # '/mnt/proj76/ylchen/datasets/covid',
-        # '/mnt/proj76/ylchen/datasets/vindr_pcxr',
-        # '/mnt/proj76/ylchen/datasets/brax',
-        # '/mnt/proj76/ylchen/datasets/brax',
-        # '/mnt/sdb/yuanfengji/data/xraygen/downsteam/siim-acr-pneumothorax',
-        # "/mnt/petrelfs/jiyuanfeng.p/data/mimic-cxr"
-        # "/mnt/petrelfs/jiyuanfeng.p/data/vindr-ribcxr"
-        # "/mnt/petrelfs/jiyuanfeng.p/data/vindr-cxr"
-        "/mnt/petrelfs/jiyuanfeng.p/data/object-cxr"
-        # "/mnt/petrelfs/jiyuanfeng.p/data/chex-det10"
-    ]
-
-    target_folders = ["image_embedding_1024", "caption_embedding", "condition_embedding_1024"]
+def main():
+    parser = argparse.ArgumentParser(description="Build T2IDataset data list.")
+    parser.add_argument("--base-dir", type=str, required=True,
+                        help="Common prefix stripped from every emitted path.")
+    parser.add_argument("--dir-list", type=str, nargs="+", required=True,
+                        help="One or more dataset directories under --base-dir.")
+    parser.add_argument("--target-folders", type=str, nargs="+",
+                        default=["image_embedding_512", "caption_embedding"],
+                        help="Embedding subfolders under each dir; add "
+                             "'cond_embedding_512' for control models.")
+    parser.add_argument("--save-file", type=str, required=True,
+                        help="Output .txt path; parent dirs are created.")
+    args = parser.parse_args()
 
     data_list = []
-    for dir in dir_list:
-        sub_data_list = []
-
-        embedd_cache_dirs = [os.path.join(dir, folder) for folder in target_folders]
-
+    for d in args.dir_list:
+        embedd_cache_dirs = [os.path.join(d, folder) for folder in args.target_folders]
         image_embed_cache_dir = embedd_cache_dirs[0]
+        image_names = mmengine.scandir(image_embed_cache_dir, suffix=".npz", recursive=True)
 
-        image_names = mmengine.scandir(embedd_cache_dirs[0], suffix='.npz', recursive=True)
+        sub_data_list = []
         for img_name in image_names:
-            img_path = os.path.join(image_embed_cache_dir, img_name)
             data = []
             exist = True
             for embedd_cache_dir in embedd_cache_dirs:
@@ -42,20 +39,20 @@ if __name__ == '__main__':
                 if not os.path.exists(embed_path):
                     exist = False
                     print(f"{embed_path} not exist!")
-                data.append(embed_path.replace(base_dir, ""))
+                data.append(embed_path.replace(args.base_dir, ""))
             if exist:
                 sub_data_list.append(data)
         data_list.extend(sub_data_list)
-        print(f"Total number of matching data in {dir}: {len(sub_data_list)}")
-    print("Total number of data: ", len(data_list))
+        print(f"Total matching entries in {d}: {len(sub_data_list)}")
+    print(f"Total entries: {len(data_list)}")
 
-    save_file = "/mnt/petrelfs/jiyuanfeng.p/data/meta/second_stage_object_cxr.txt"
-    if not os.path.exists(os.path.dirname(save_file)):
-        os.makedirs(os.path.dirname(save_file))
-
-    # save to txt file, override
-    with open(save_file, 'w') as f:
+    save_dir = os.path.dirname(args.save_file)
+    if save_dir and not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    with open(args.save_file, "w") as f:
         for item in data_list:
-            # get image and text path, separated by space
-            item = ' '.join(item)
-            f.write("%s\n" % item)
+            f.write(" ".join(item) + "\n")
+
+
+if __name__ == "__main__":
+    main()

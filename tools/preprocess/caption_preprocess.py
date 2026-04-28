@@ -57,8 +57,8 @@ if __name__ == '__main__':
                         help='Key of the caption in the CSV file')
     parser.add_argument('--s3-bucket',
                     type=str,
-                    default='s3://jiyuanfengp',
-                    help='Key of the caption in the CSV file')
+                    default='',
+                    help='Optional s3:// URI for petrel backend; leave empty for local disk.')
     
     args = parser.parse_args()
 
@@ -84,8 +84,6 @@ if __name__ == '__main__':
     print((f"Processing subset {args.index} of {args.parts} subsets"))
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # text_model = T5Embedder(device=device, cache_dir="/mnt/petrelfs/jiyuanfeng.p/.cache/IF_")
 
     text_model = T5Embedder(device=device)
     
