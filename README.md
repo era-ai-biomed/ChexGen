@@ -43,11 +43,9 @@ ChexGen is a generative foundation model for chest radiography. It synthesizes c
 
 ## Highlights
 
-- Latent diffusion transformer (DiT) architecture for chest radiograph generation.
-- Trained on 960,000 radiograph-report pairs.
-- Text- and control-conditioned generation from radiology impressions.
-- Checkpoints for multiple resolutions and conditioning settings.
-- Open research code for model loading, text embedding, diffusion sampling, and dataset utilities.
+- Latent diffusion transformer (DiT) architecture, trained on 960,000 chest radiograph–report pairs.
+- Released checkpoints at 256×256 and 512×512, covering impression text, demographic, and SIIM mask-conditioned generation.
+- Open research code: model loading, T5 text embedding, diffusion sampling, fine-tuning, and dataset utilities.
 
 ## Available Checkpoints
 
@@ -123,6 +121,14 @@ bash scripts/sample_demographic_impression.sh    # finetuned_demographic_impress
 bash scripts/sample_csv.sh path/to/your_prompts.csv
 ```
 
+The demographic wrapper expects impressions prefixed with sex/age/race attributes — see [`data/mimic_val_p19_demographic_impression_example.csv`](data/mimic_val_p19_demographic_impression_example.csv) for the format:
+
+```csv
+name,Finding Labels,impression
+chest_sar_001.png,No Finding,"sex:Male, age:71.0, race:Black. No acute findings in the chest."
+chest_sar_002.png,Cardiomegaly,"sex:Male, age:61.0, race:White. Mild cardiomegaly. No signs of pneumonia or edema."
+```
+
 Outputs land in `visualization/` along with a `prompts.txt` mapping each image to its source prompt.
 
 #### Direct Sampler Invocation
@@ -193,22 +199,6 @@ torchrun \
 - `--batch-size` (default `1`) — Batch size per GPU. Use `1` for best fidelity; larger values run faster but route cross-attention through `xformers` `BlockDiagonalMask`, with small numerical drift across the 100 sampling steps.
 - `--text-prompt-file` (default `None`) — Prompt file path.
 - `--text-prompt-key` (default `impression`) — Prompt field for CSV/JSON/JSONL files.
-
-#### Demographic-conditioned
-
-`finetuned_demographic_impression_512.pth` accepts impressions prefixed with sex/age/race attributes. The bundled CSV [`data/mimic_val_p19_demographic_impression_example.csv`](data/mimic_val_p19_demographic_impression_example.csv) shows the expected `impression` format:
-
-```csv
-name,Finding Labels,impression
-chest_sar_001.png,No Finding,"sex:Male, age:71.0, race:Black. No acute findings in the chest."
-chest_sar_002.png,Cardiomegaly,"sex:Male, age:61.0, race:White. Mild cardiomegaly. No signs of pneumonia or edema."
-```
-
-Run via the wrapper:
-
-```bash
-bash scripts/sample_demographic_impression.sh
-```
 
 ### Mask-conditioned
 
