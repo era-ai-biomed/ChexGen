@@ -8,6 +8,10 @@
 
 ChexGen is a generative foundation model for chest radiography. It synthesizes chest X-rays from radiology text prompts and optional control inputs, and is designed to support synthetic data generation, downstream model development, and research on robustness and fairness in medical imaging.
 
+<table>
+<tr>
+<td width="45%" valign="top">
+
 ## Contents
 
 - [News](#news)
@@ -21,6 +25,15 @@ ChexGen is a generative foundation model for chest radiography. It synthesizes c
 - [Citation](#citation)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
+
+</td>
+<td width="55%" valign="top">
+
+<img src="assets/overview.png" alt="ChexGen overview" width="100%">
+
+</td>
+</tr>
+</table>
 
 ## News
 
