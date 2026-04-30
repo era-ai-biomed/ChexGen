@@ -1,0 +1,1483 @@
+2024-10-31 10:51:10,237 - mmcls - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: linux
+Python: 3.9.18 (main, Sep 11 2023, 13:41:44) [GCC 11.2.0]
+CUDA available: True
+GPU 0: NVIDIA A100-SXM4-80GB
+CUDA_HOME: /mnt/lustre/share/cuda-11.8
+NVCC: Cuda compilation tools, release 11.8, V11.8.89
+GCC: gcc (GCC) 7.3.0
+PyTorch: 2.2.0+cu121
+PyTorch compiling details: PyTorch built with:
+  - GCC 9.3
+  - C++ Version: 201703
+  - Intel(R) oneAPI Math Kernel Library Version 2022.2-Product Build 20220804 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v3.3.2 (Git Hash 2dc95a2ad0841e29db8b22fbccaf3e5da7992b01)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - LAPACK is enabled (usually provided by MKL)
+  - NNPACK is enabled
+  - CPU capability usage: AVX512
+  - CUDA Runtime 12.1
+  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90
+  - CuDNN 8.9.2
+  - Magma 2.6.1
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=12.1, CUDNN_VERSION=8.9.2, CXX_COMPILER=/opt/rh/devtoolset-9/root/usr/bin/c++, CXX_FLAGS= -D_GLIBCXX_USE_CXX11_ABI=0 -fabi-version=11 -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOROCTRACER -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=pedantic -Wno-error=old-style-cast -Wno-missing-braces -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=2.2.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=1, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, 
+
+TorchVision: 0.17.0+cu121
+OpenCV: 4.9.0
+MMCV: 1.6.0
+MMCV Compiler: n/a
+MMCV CUDA Compiler: n/a
+MMClassification: 0.25.0+68bac71
+------------------------------------------------------------
+
+2024-10-31 10:51:10,238 - mmcls - INFO - Distributed training: False
+2024-10-31 10:51:10,733 - mmcls - INFO - Config:
+model = dict(
+    type='ImageClassifier',
+    backbone=dict(
+        type='DenseNet',
+        arch='121',
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='weights/densenet121_4xb256_in1k_20220426-07450f99.pth',
+            prefix='backbone')),
+    neck=dict(type='GlobalAveragePooling'),
+    head=dict(
+        type='MultiLabelLinearClsHead', num_classes=19, in_channels=1024))
+dataset_type = 'Chest19'
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='RandomResizedCrop',
+        size=256,
+        backend='pillow',
+        interpolation='bicubic'),
+    dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),
+    dict(
+        type='Normalize',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True),
+    dict(type='ImageToTensor', keys=['img']),
+    dict(type='ToTensor', keys=['gt_label']),
+    dict(type='Collect', keys=['img', 'gt_label'])
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='Resize', size=256, backend='pillow', interpolation='bicubic'),
+    dict(
+        type='Normalize',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True),
+    dict(type='ImageToTensor', keys=['img']),
+    dict(type='Collect', keys=['img'])
+]
+data = dict(
+    samples_per_gpu=4,
+    workers_per_gpu=4,
+    train=dict(
+        type='Chest19',
+        data_prefix=
+        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',
+        ann_file=
+        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/chest_5-shot_train_exp5.txt',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='RandomResizedCrop',
+                size=256,
+                backend='pillow',
+                interpolation='bicubic'),
+            dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='ToTensor', keys=['gt_label']),
+            dict(type='Collect', keys=['img', 'gt_label'])
+        ]),
+    val=dict(
+        type='Chest19',
+        data_prefix=
+        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',
+        ann_file=
+        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/chest_5-shot_val_exp5.txt',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='Resize',
+                size=256,
+                backend='pillow',
+                interpolation='bicubic'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ]),
+    test=dict(
+        type='Chest19',
+        data_prefix=
+        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',
+        ann_file=
+        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/test_WithLabel.txt',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='Resize',
+                size=256,
+                backend='pillow',
+                interpolation='bicubic'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ]))
+evaluation = dict(interval=1, metric='mAP', save_best='auto')
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+lr_config = dict(policy='CosineAnnealing', min_lr=0)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
+checkpoint_config = dict(interval=1, max_keep_ckpts=1)
+log_config = dict(interval=5, hooks=[dict(type='TextLoggerHook')])
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+load_from = 'work_dirs/downsteam/cls/mimic/pretrain/sync5/latest.pth'
+resume_from = None
+workflow = [('train', 1)]
+custom_imports = dict(
+    imports=[
+        'medfmc.models', 'medfmc.datasets.medical_datasets',
+        'medfmc.core.evaluation'
+    ],
+    allow_failed_imports=False)
+dataset = 'chest'
+nshot = 5
+exp = 5
+base_path = '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC'
+train_val_template = '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/{dataset}/{dataset}_{nshot}-shot_{split}_exp{exp}.txt'
+work_dir = 'work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5'
+gpu_ids = [0]
+
+2024-10-31 10:51:10,734 - mmcls - INFO - Set random seed to 0, deterministic: False
+2024-10-31 10:51:10,824 - mmcls - INFO - initialize DenseNet with init_cfg {'type': 'Pretrained', 'checkpoint': 'weights/densenet121_4xb256_in1k_20220426-07450f99.pth', 'prefix': 'backbone'}
+2024-10-31 10:51:10,934 - mmcls - INFO - initialize MultiLabelLinearClsHead with init_cfg {'type': 'Normal', 'layer': 'Linear', 'std': 0.01}
+Name of parameter - Initialization information
+
+backbone.stem.0.weight - torch.Size([64, 3, 7, 7]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stem.1.weight - torch.Size([64]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stem.1.bias - torch.Size([64]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.norm1.weight - torch.Size([64]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.norm1.bias - torch.Size([64]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.conv1.weight - torch.Size([128, 64, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.0.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.norm1.weight - torch.Size([96]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.norm1.bias - torch.Size([96]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.conv1.weight - torch.Size([128, 96, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.1.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.norm1.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.norm1.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.conv1.weight - torch.Size([128, 128, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.2.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.norm1.weight - torch.Size([160]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.norm1.bias - torch.Size([160]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.conv1.weight - torch.Size([128, 160, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.3.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.norm1.weight - torch.Size([192]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.norm1.bias - torch.Size([192]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.conv1.weight - torch.Size([128, 192, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.4.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.norm1.weight - torch.Size([224]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.norm1.bias - torch.Size([224]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.conv1.weight - torch.Size([128, 224, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.0.block.5.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.norm1.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.norm1.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.conv1.weight - torch.Size([128, 128, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.0.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.norm1.weight - torch.Size([160]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.norm1.bias - torch.Size([160]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.conv1.weight - torch.Size([128, 160, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.1.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.norm1.weight - torch.Size([192]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.norm1.bias - torch.Size([192]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.conv1.weight - torch.Size([128, 192, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.2.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.norm1.weight - torch.Size([224]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.norm1.bias - torch.Size([224]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.conv1.weight - torch.Size([128, 224, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.3.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.norm1.weight - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.norm1.bias - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.conv1.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.4.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.norm1.weight - torch.Size([288]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.norm1.bias - torch.Size([288]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.conv1.weight - torch.Size([128, 288, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.5.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.norm1.weight - torch.Size([320]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.norm1.bias - torch.Size([320]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.conv1.weight - torch.Size([128, 320, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.6.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.norm1.weight - torch.Size([352]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.norm1.bias - torch.Size([352]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.conv1.weight - torch.Size([128, 352, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.7.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.norm1.weight - torch.Size([384]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.norm1.bias - torch.Size([384]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.conv1.weight - torch.Size([128, 384, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.8.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.norm1.weight - torch.Size([416]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.norm1.bias - torch.Size([416]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.conv1.weight - torch.Size([128, 416, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.9.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.norm1.weight - torch.Size([448]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.norm1.bias - torch.Size([448]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.conv1.weight - torch.Size([128, 448, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.10.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.norm1.weight - torch.Size([480]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.norm1.bias - torch.Size([480]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.conv1.weight - torch.Size([128, 480, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.1.block.11.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.norm1.weight - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.norm1.bias - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.conv1.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.0.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.norm1.weight - torch.Size([288]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.norm1.bias - torch.Size([288]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.conv1.weight - torch.Size([128, 288, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.1.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.norm1.weight - torch.Size([320]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.norm1.bias - torch.Size([320]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.conv1.weight - torch.Size([128, 320, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.2.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.norm1.weight - torch.Size([352]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.norm1.bias - torch.Size([352]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.conv1.weight - torch.Size([128, 352, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.3.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.norm1.weight - torch.Size([384]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.norm1.bias - torch.Size([384]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.conv1.weight - torch.Size([128, 384, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.4.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.norm1.weight - torch.Size([416]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.norm1.bias - torch.Size([416]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.conv1.weight - torch.Size([128, 416, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.5.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.norm1.weight - torch.Size([448]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.norm1.bias - torch.Size([448]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.conv1.weight - torch.Size([128, 448, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.6.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.norm1.weight - torch.Size([480]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.norm1.bias - torch.Size([480]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.conv1.weight - torch.Size([128, 480, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.7.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.norm1.weight - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.norm1.bias - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.8.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.norm1.weight - torch.Size([544]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.norm1.bias - torch.Size([544]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.conv1.weight - torch.Size([128, 544, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.9.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.norm1.weight - torch.Size([576]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.norm1.bias - torch.Size([576]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.conv1.weight - torch.Size([128, 576, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.10.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.norm1.weight - torch.Size([608]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.norm1.bias - torch.Size([608]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.conv1.weight - torch.Size([128, 608, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.11.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.norm1.weight - torch.Size([640]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.norm1.bias - torch.Size([640]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.conv1.weight - torch.Size([128, 640, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.12.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.norm1.weight - torch.Size([672]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.norm1.bias - torch.Size([672]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.conv1.weight - torch.Size([128, 672, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.13.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.norm1.weight - torch.Size([704]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.norm1.bias - torch.Size([704]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.conv1.weight - torch.Size([128, 704, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.14.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.norm1.weight - torch.Size([736]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.norm1.bias - torch.Size([736]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.conv1.weight - torch.Size([128, 736, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.15.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.norm1.weight - torch.Size([768]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.norm1.bias - torch.Size([768]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.conv1.weight - torch.Size([128, 768, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.16.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.norm1.weight - torch.Size([800]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.norm1.bias - torch.Size([800]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.conv1.weight - torch.Size([128, 800, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.17.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.norm1.weight - torch.Size([832]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.norm1.bias - torch.Size([832]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.conv1.weight - torch.Size([128, 832, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.18.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.norm1.weight - torch.Size([864]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.norm1.bias - torch.Size([864]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.conv1.weight - torch.Size([128, 864, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.19.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.norm1.weight - torch.Size([896]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.norm1.bias - torch.Size([896]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.conv1.weight - torch.Size([128, 896, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.20.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.norm1.weight - torch.Size([928]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.norm1.bias - torch.Size([928]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.conv1.weight - torch.Size([128, 928, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.21.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.norm1.weight - torch.Size([960]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.norm1.bias - torch.Size([960]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.conv1.weight - torch.Size([128, 960, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.22.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.norm1.weight - torch.Size([992]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.norm1.bias - torch.Size([992]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.conv1.weight - torch.Size([128, 992, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.2.block.23.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.norm1.weight - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.norm1.bias - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.0.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.norm1.weight - torch.Size([544]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.norm1.bias - torch.Size([544]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.conv1.weight - torch.Size([128, 544, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.1.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.norm1.weight - torch.Size([576]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.norm1.bias - torch.Size([576]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.conv1.weight - torch.Size([128, 576, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.2.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.norm1.weight - torch.Size([608]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.norm1.bias - torch.Size([608]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.conv1.weight - torch.Size([128, 608, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.3.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.norm1.weight - torch.Size([640]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.norm1.bias - torch.Size([640]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.conv1.weight - torch.Size([128, 640, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.4.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.norm1.weight - torch.Size([672]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.norm1.bias - torch.Size([672]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.conv1.weight - torch.Size([128, 672, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.5.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.norm1.weight - torch.Size([704]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.norm1.bias - torch.Size([704]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.conv1.weight - torch.Size([128, 704, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.6.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.norm1.weight - torch.Size([736]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.norm1.bias - torch.Size([736]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.conv1.weight - torch.Size([128, 736, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.7.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.norm1.weight - torch.Size([768]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.norm1.bias - torch.Size([768]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.conv1.weight - torch.Size([128, 768, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.8.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.norm1.weight - torch.Size([800]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.norm1.bias - torch.Size([800]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.conv1.weight - torch.Size([128, 800, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.9.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.norm1.weight - torch.Size([832]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.norm1.bias - torch.Size([832]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.conv1.weight - torch.Size([128, 832, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.10.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.norm1.weight - torch.Size([864]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.norm1.bias - torch.Size([864]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.conv1.weight - torch.Size([128, 864, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.11.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.norm1.weight - torch.Size([896]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.norm1.bias - torch.Size([896]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.conv1.weight - torch.Size([128, 896, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.12.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.norm1.weight - torch.Size([928]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.norm1.bias - torch.Size([928]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.conv1.weight - torch.Size([128, 928, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.13.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.norm1.weight - torch.Size([960]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.norm1.bias - torch.Size([960]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.conv1.weight - torch.Size([128, 960, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.14.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.norm1.weight - torch.Size([992]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.norm1.bias - torch.Size([992]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.conv1.weight - torch.Size([128, 992, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.norm2.weight - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.norm2.bias - torch.Size([128]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.stages.3.block.15.conv2.weight - torch.Size([32, 128, 3, 3]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.0.norm.weight - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.0.norm.bias - torch.Size([256]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.0.conv.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.1.norm.weight - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.1.norm.bias - torch.Size([512]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.1.conv.weight - torch.Size([256, 512, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.2.norm.weight - torch.Size([1024]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.2.norm.bias - torch.Size([1024]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.2.conv.weight - torch.Size([512, 1024, 1, 1]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.3.0.weight - torch.Size([1024]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+backbone.transitions.3.0.bias - torch.Size([1024]): 
+PretrainedInit: load from weights/densenet121_4xb256_in1k_20220426-07450f99.pth 
+
+head.fc.weight - torch.Size([19, 1024]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+head.fc.bias - torch.Size([19]): 
+NormalInit: mean=0, std=0.01, bias=0 
+2024-10-31 10:51:12,686 - mmcls - INFO - load checkpoint from local path: work_dirs/downsteam/cls/mimic/pretrain/sync5/latest.pth
+2024-10-31 10:51:12,861 - mmcls - WARNING - The model and loaded state dict do not match exactly
+
+size mismatch for head.fc.weight: copying a param with shape torch.Size([14, 1024]) from checkpoint, the shape in current model is torch.Size([19, 1024]).
+size mismatch for head.fc.bias: copying a param with shape torch.Size([14]) from checkpoint, the shape in current model is torch.Size([19]).
+2024-10-31 10:51:12,865 - mmcls - INFO - Start running, host: jiyuanfeng.p@SH-IDC1-10-140-0-233, work_dir: /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5
+2024-10-31 10:51:12,867 - mmcls - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) CosineAnnealingLrUpdaterHook       
+(NORMAL      ) CheckpointHook                     
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) CosineAnnealingLrUpdaterHook       
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) CosineAnnealingLrUpdaterHook       
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+ -------------------- 
+after_train_iter:
+(ABOVE_NORMAL) OptimizerHook                      
+(NORMAL      ) CheckpointHook                     
+(LOW         ) IterTimerHook                      
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) CheckpointHook                     
+(LOW         ) EvalHook                           
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_epoch:
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_epoch:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_run:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+2024-10-31 10:51:12,868 - mmcls - INFO - workflow: [('train', 1)], max: 20 epochs
+2024-10-31 10:51:12,869 - mmcls - INFO - Checkpoints will be saved to /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5 by HardDiskBackend.
+2024-10-31 10:51:19,225 - mmcls - INFO - Epoch [1][5/24]	lr: 1.000e-03, eta: 0:10:03, time: 1.270, data_time: 0.457, memory: 859, loss: 10.5881
+2024-10-31 10:51:19,457 - mmcls - INFO - Epoch [1][10/24]	lr: 1.000e-03, eta: 0:05:09, time: 0.047, data_time: 0.001, memory: 859, loss: 8.0056
+2024-10-31 10:51:19,686 - mmcls - INFO - Epoch [1][15/24]	lr: 1.000e-03, eta: 0:03:31, time: 0.046, data_time: 0.001, memory: 859, loss: 10.0886
+2024-10-31 10:51:19,907 - mmcls - INFO - Epoch [1][20/24]	lr: 1.000e-03, eta: 0:02:41, time: 0.044, data_time: 0.001, memory: 859, loss: 8.5257
+2024-10-31 10:51:20,377 - mmcls - INFO - Saving checkpoint at 1 epochs
+2024-10-31 10:51:28,447 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_1.pth.
+2024-10-31 10:51:28,449 - mmcls - INFO - Best mAP is 19.2258 at 1 epoch.
+2024-10-31 10:51:28,450 - mmcls - INFO - Epoch(val) [1][221]	mAP: 19.2258
+2024-10-31 10:51:30,860 - mmcls - INFO - Epoch [2][5/24]	lr: 9.938e-04, eta: 0:02:26, time: 0.481, data_time: 0.432, memory: 859, loss: 7.1698
+2024-10-31 10:51:31,112 - mmcls - INFO - Epoch [2][10/24]	lr: 9.938e-04, eta: 0:02:07, time: 0.051, data_time: 0.001, memory: 859, loss: 7.5850
+2024-10-31 10:51:31,355 - mmcls - INFO - Epoch [2][15/24]	lr: 9.938e-04, eta: 0:01:52, time: 0.048, data_time: 0.001, memory: 859, loss: 7.8391
+2024-10-31 10:51:31,587 - mmcls - INFO - Epoch [2][20/24]	lr: 9.938e-04, eta: 0:01:40, time: 0.046, data_time: 0.001, memory: 859, loss: 8.0536
+2024-10-31 10:51:31,763 - mmcls - INFO - Saving checkpoint at 2 epochs
+2024-10-31 10:51:39,451 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_1.pth was removed
+2024-10-31 10:51:39,707 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_2.pth.
+2024-10-31 10:51:39,709 - mmcls - INFO - Best mAP is 22.9202 at 2 epoch.
+2024-10-31 10:51:39,710 - mmcls - INFO - Epoch(val) [2][221]	mAP: 22.9202
+2024-10-31 10:51:42,132 - mmcls - INFO - Epoch [3][5/24]	lr: 9.755e-04, eta: 0:01:41, time: 0.483, data_time: 0.432, memory: 859, loss: 7.8686
+2024-10-31 10:51:42,381 - mmcls - INFO - Epoch [3][10/24]	lr: 9.755e-04, eta: 0:01:33, time: 0.050, data_time: 0.001, memory: 859, loss: 7.2190
+2024-10-31 10:51:42,633 - mmcls - INFO - Epoch [3][15/24]	lr: 9.755e-04, eta: 0:01:26, time: 0.050, data_time: 0.001, memory: 859, loss: 7.2908
+2024-10-31 10:51:42,873 - mmcls - INFO - Epoch [3][20/24]	lr: 9.755e-04, eta: 0:01:20, time: 0.048, data_time: 0.001, memory: 859, loss: 7.6840
+2024-10-31 10:51:43,070 - mmcls - INFO - Saving checkpoint at 3 epochs
+2024-10-31 10:51:50,607 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_2.pth was removed
+2024-10-31 10:51:50,850 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_3.pth.
+2024-10-31 10:51:50,851 - mmcls - INFO - Best mAP is 23.2046 at 3 epoch.
+2024-10-31 10:51:50,853 - mmcls - INFO - Epoch(val) [3][221]	mAP: 23.2046
+2024-10-31 10:51:53,248 - mmcls - INFO - Epoch [4][5/24]	lr: 9.455e-04, eta: 0:01:22, time: 0.478, data_time: 0.428, memory: 859, loss: 7.0317
+2024-10-31 10:51:53,500 - mmcls - INFO - Epoch [4][10/24]	lr: 9.455e-04, eta: 0:01:17, time: 0.050, data_time: 0.001, memory: 859, loss: 7.1281
+2024-10-31 10:51:53,749 - mmcls - INFO - Epoch [4][15/24]	lr: 9.455e-04, eta: 0:01:13, time: 0.050, data_time: 0.001, memory: 859, loss: 7.2891
+2024-10-31 10:51:53,988 - mmcls - INFO - Epoch [4][20/24]	lr: 9.455e-04, eta: 0:01:09, time: 0.048, data_time: 0.001, memory: 859, loss: 6.4766
+2024-10-31 10:51:54,183 - mmcls - INFO - Saving checkpoint at 4 epochs
+2024-10-31 10:52:01,763 - mmcls - INFO - Epoch(val) [4][221]	mAP: 22.3322
+2024-10-31 10:52:04,156 - mmcls - INFO - Epoch [5][5/24]	lr: 9.045e-04, eta: 0:01:10, time: 0.477, data_time: 0.429, memory: 859, loss: 6.1003
+2024-10-31 10:52:04,388 - mmcls - INFO - Epoch [5][10/24]	lr: 9.045e-04, eta: 0:01:07, time: 0.047, data_time: 0.001, memory: 859, loss: 7.0064
+2024-10-31 10:52:04,630 - mmcls - INFO - Epoch [5][15/24]	lr: 9.045e-04, eta: 0:01:04, time: 0.048, data_time: 0.001, memory: 859, loss: 6.9622
+2024-10-31 10:52:04,872 - mmcls - INFO - Epoch [5][20/24]	lr: 9.045e-04, eta: 0:01:01, time: 0.049, data_time: 0.001, memory: 859, loss: 7.2279
+2024-10-31 10:52:05,068 - mmcls - INFO - Saving checkpoint at 5 epochs
+2024-10-31 10:52:12,622 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_3.pth was removed
+2024-10-31 10:52:12,884 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_5.pth.
+2024-10-31 10:52:12,886 - mmcls - INFO - Best mAP is 27.2618 at 5 epoch.
+2024-10-31 10:52:12,887 - mmcls - INFO - Epoch(val) [5][221]	mAP: 27.2618
+2024-10-31 10:52:15,295 - mmcls - INFO - Epoch [6][5/24]	lr: 8.536e-04, eta: 0:01:02, time: 0.481, data_time: 0.427, memory: 859, loss: 6.0366
+2024-10-31 10:52:15,538 - mmcls - INFO - Epoch [6][10/24]	lr: 8.536e-04, eta: 0:00:59, time: 0.049, data_time: 0.001, memory: 859, loss: 6.9760
+2024-10-31 10:52:15,783 - mmcls - INFO - Epoch [6][15/24]	lr: 8.536e-04, eta: 0:00:57, time: 0.049, data_time: 0.001, memory: 859, loss: 7.1679
+2024-10-31 10:52:16,022 - mmcls - INFO - Epoch [6][20/24]	lr: 8.536e-04, eta: 0:00:55, time: 0.048, data_time: 0.001, memory: 859, loss: 7.2257
+2024-10-31 10:52:16,216 - mmcls - INFO - Saving checkpoint at 6 epochs
+2024-10-31 10:52:23,735 - mmcls - INFO - Epoch(val) [6][221]	mAP: 27.1755
+2024-10-31 10:52:26,162 - mmcls - INFO - Epoch [7][5/24]	lr: 7.939e-04, eta: 0:00:55, time: 0.484, data_time: 0.433, memory: 859, loss: 6.5043
+2024-10-31 10:52:26,407 - mmcls - INFO - Epoch [7][10/24]	lr: 7.939e-04, eta: 0:00:53, time: 0.049, data_time: 0.001, memory: 859, loss: 5.9200
+2024-10-31 10:52:26,655 - mmcls - INFO - Epoch [7][15/24]	lr: 7.939e-04, eta: 0:00:51, time: 0.049, data_time: 0.001, memory: 859, loss: 6.9324
+2024-10-31 10:52:26,895 - mmcls - INFO - Epoch [7][20/24]	lr: 7.939e-04, eta: 0:00:49, time: 0.048, data_time: 0.001, memory: 859, loss: 7.4115
+2024-10-31 10:52:27,083 - mmcls - INFO - Saving checkpoint at 7 epochs
+2024-10-31 10:52:34,641 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_5.pth was removed
+2024-10-31 10:52:34,894 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_7.pth.
+2024-10-31 10:52:34,895 - mmcls - INFO - Best mAP is 28.0909 at 7 epoch.
+2024-10-31 10:52:34,896 - mmcls - INFO - Epoch(val) [7][221]	mAP: 28.0909
+2024-10-31 10:52:37,310 - mmcls - INFO - Epoch [8][5/24]	lr: 7.270e-04, eta: 0:00:50, time: 0.482, data_time: 0.430, memory: 859, loss: 6.2527
+2024-10-31 10:52:37,565 - mmcls - INFO - Epoch [8][10/24]	lr: 7.270e-04, eta: 0:00:48, time: 0.051, data_time: 0.002, memory: 859, loss: 5.8998
+2024-10-31 10:52:37,813 - mmcls - INFO - Epoch [8][15/24]	lr: 7.270e-04, eta: 0:00:46, time: 0.050, data_time: 0.001, memory: 859, loss: 6.9145
+2024-10-31 10:52:38,049 - mmcls - INFO - Epoch [8][20/24]	lr: 7.270e-04, eta: 0:00:45, time: 0.047, data_time: 0.001, memory: 859, loss: 6.6452
+2024-10-31 10:52:38,246 - mmcls - INFO - Saving checkpoint at 8 epochs
+2024-10-31 10:52:45,867 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_7.pth was removed
+2024-10-31 10:52:46,138 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_8.pth.
+2024-10-31 10:52:46,139 - mmcls - INFO - Best mAP is 28.8347 at 8 epoch.
+2024-10-31 10:52:46,140 - mmcls - INFO - Epoch(val) [8][221]	mAP: 28.8347
+2024-10-31 10:52:48,514 - mmcls - INFO - Epoch [9][5/24]	lr: 6.545e-04, eta: 0:00:45, time: 0.474, data_time: 0.428, memory: 859, loss: 6.7081
+2024-10-31 10:52:48,752 - mmcls - INFO - Epoch [9][10/24]	lr: 6.545e-04, eta: 0:00:43, time: 0.047, data_time: 0.001, memory: 859, loss: 5.5367
+2024-10-31 10:52:48,989 - mmcls - INFO - Epoch [9][15/24]	lr: 6.545e-04, eta: 0:00:41, time: 0.047, data_time: 0.001, memory: 859, loss: 6.5871
+2024-10-31 10:52:49,223 - mmcls - INFO - Epoch [9][20/24]	lr: 6.545e-04, eta: 0:00:40, time: 0.047, data_time: 0.001, memory: 859, loss: 6.1625
+2024-10-31 10:52:49,396 - mmcls - INFO - Saving checkpoint at 9 epochs
+2024-10-31 10:52:56,931 - mmcls - INFO - Epoch(val) [9][221]	mAP: 28.4490
+2024-10-31 10:52:59,316 - mmcls - INFO - Epoch [10][5/24]	lr: 5.782e-04, eta: 0:00:40, time: 0.476, data_time: 0.428, memory: 859, loss: 7.1681
+2024-10-31 10:52:59,547 - mmcls - INFO - Epoch [10][10/24]	lr: 5.782e-04, eta: 0:00:38, time: 0.046, data_time: 0.001, memory: 859, loss: 5.4488
+2024-10-31 10:52:59,779 - mmcls - INFO - Epoch [10][15/24]	lr: 5.782e-04, eta: 0:00:37, time: 0.046, data_time: 0.001, memory: 859, loss: 6.3669
+2024-10-31 10:53:00,020 - mmcls - INFO - Epoch [10][20/24]	lr: 5.782e-04, eta: 0:00:36, time: 0.048, data_time: 0.001, memory: 859, loss: 5.5023
+2024-10-31 10:53:00,211 - mmcls - INFO - Saving checkpoint at 10 epochs
+2024-10-31 10:53:07,782 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_8.pth was removed
+2024-10-31 10:53:08,073 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_10.pth.
+2024-10-31 10:53:08,074 - mmcls - INFO - Best mAP is 29.9065 at 10 epoch.
+2024-10-31 10:53:08,076 - mmcls - INFO - Epoch(val) [10][221]	mAP: 29.9065
+2024-10-31 10:53:10,454 - mmcls - INFO - Epoch [11][5/24]	lr: 5.000e-04, eta: 0:00:35, time: 0.475, data_time: 0.426, memory: 859, loss: 6.0577
+2024-10-31 10:53:10,694 - mmcls - INFO - Epoch [11][10/24]	lr: 5.000e-04, eta: 0:00:34, time: 0.048, data_time: 0.001, memory: 859, loss: 5.7258
+2024-10-31 10:53:10,944 - mmcls - INFO - Epoch [11][15/24]	lr: 5.000e-04, eta: 0:00:33, time: 0.050, data_time: 0.001, memory: 859, loss: 6.4597
+2024-10-31 10:53:11,190 - mmcls - INFO - Epoch [11][20/24]	lr: 5.000e-04, eta: 0:00:32, time: 0.049, data_time: 0.001, memory: 859, loss: 6.3457
+2024-10-31 10:53:11,390 - mmcls - INFO - Saving checkpoint at 11 epochs
+2024-10-31 10:53:18,892 - mmcls - INFO - Epoch(val) [11][221]	mAP: 29.4901
+2024-10-31 10:53:21,298 - mmcls - INFO - Epoch [12][5/24]	lr: 4.218e-04, eta: 0:00:31, time: 0.480, data_time: 0.432, memory: 859, loss: 5.6298
+2024-10-31 10:53:21,548 - mmcls - INFO - Epoch [12][10/24]	lr: 4.218e-04, eta: 0:00:30, time: 0.050, data_time: 0.001, memory: 859, loss: 5.3392
+2024-10-31 10:53:21,787 - mmcls - INFO - Epoch [12][15/24]	lr: 4.218e-04, eta: 0:00:29, time: 0.048, data_time: 0.001, memory: 859, loss: 5.7434
+2024-10-31 10:53:22,023 - mmcls - INFO - Epoch [12][20/24]	lr: 4.218e-04, eta: 0:00:28, time: 0.047, data_time: 0.001, memory: 859, loss: 5.2560
+2024-10-31 10:53:22,208 - mmcls - INFO - Saving checkpoint at 12 epochs
+2024-10-31 10:53:29,658 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_10.pth was removed
+2024-10-31 10:53:29,919 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_12.pth.
+2024-10-31 10:53:29,921 - mmcls - INFO - Best mAP is 30.4682 at 12 epoch.
+2024-10-31 10:53:29,922 - mmcls - INFO - Epoch(val) [12][221]	mAP: 30.4682
+2024-10-31 10:53:32,342 - mmcls - INFO - Epoch [13][5/24]	lr: 3.455e-04, eta: 0:00:27, time: 0.483, data_time: 0.434, memory: 859, loss: 4.6141
+2024-10-31 10:53:32,580 - mmcls - INFO - Epoch [13][10/24]	lr: 3.455e-04, eta: 0:00:26, time: 0.048, data_time: 0.001, memory: 859, loss: 5.5471
+2024-10-31 10:53:32,808 - mmcls - INFO - Epoch [13][15/24]	lr: 3.455e-04, eta: 0:00:25, time: 0.046, data_time: 0.001, memory: 859, loss: 4.7509
+2024-10-31 10:53:33,039 - mmcls - INFO - Epoch [13][20/24]	lr: 3.455e-04, eta: 0:00:24, time: 0.046, data_time: 0.001, memory: 859, loss: 5.4442
+2024-10-31 10:53:33,223 - mmcls - INFO - Saving checkpoint at 13 epochs
+2024-10-31 10:53:40,756 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_12.pth was removed
+2024-10-31 10:53:41,013 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_13.pth.
+2024-10-31 10:53:41,014 - mmcls - INFO - Best mAP is 32.0661 at 13 epoch.
+2024-10-31 10:53:41,015 - mmcls - INFO - Epoch(val) [13][221]	mAP: 32.0661
+2024-10-31 10:53:43,476 - mmcls - INFO - Epoch [14][5/24]	lr: 2.730e-04, eta: 0:00:24, time: 0.491, data_time: 0.442, memory: 859, loss: 4.7842
+2024-10-31 10:53:43,705 - mmcls - INFO - Epoch [14][10/24]	lr: 2.730e-04, eta: 0:00:23, time: 0.046, data_time: 0.001, memory: 859, loss: 6.3261
+2024-10-31 10:53:43,939 - mmcls - INFO - Epoch [14][15/24]	lr: 2.730e-04, eta: 0:00:22, time: 0.047, data_time: 0.001, memory: 859, loss: 5.7146
+2024-10-31 10:53:44,169 - mmcls - INFO - Epoch [14][20/24]	lr: 2.730e-04, eta: 0:00:21, time: 0.046, data_time: 0.001, memory: 859, loss: 5.1538
+2024-10-31 10:53:44,358 - mmcls - INFO - Saving checkpoint at 14 epochs
+2024-10-31 10:53:51,885 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_13.pth was removed
+2024-10-31 10:53:52,145 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_14.pth.
+2024-10-31 10:53:52,146 - mmcls - INFO - Best mAP is 33.1223 at 14 epoch.
+2024-10-31 10:53:52,147 - mmcls - INFO - Epoch(val) [14][221]	mAP: 33.1223
+2024-10-31 10:53:54,550 - mmcls - INFO - Epoch [15][5/24]	lr: 2.061e-04, eta: 0:00:20, time: 0.479, data_time: 0.431, memory: 859, loss: 4.5001
+2024-10-31 10:53:54,795 - mmcls - INFO - Epoch [15][10/24]	lr: 2.061e-04, eta: 0:00:19, time: 0.049, data_time: 0.001, memory: 859, loss: 5.0879
+2024-10-31 10:53:55,043 - mmcls - INFO - Epoch [15][15/24]	lr: 2.061e-04, eta: 0:00:18, time: 0.050, data_time: 0.001, memory: 859, loss: 4.6260
+2024-10-31 10:53:55,287 - mmcls - INFO - Epoch [15][20/24]	lr: 2.061e-04, eta: 0:00:17, time: 0.049, data_time: 0.001, memory: 859, loss: 4.6977
+2024-10-31 10:53:55,492 - mmcls - INFO - Saving checkpoint at 15 epochs
+2024-10-31 10:54:03,092 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_14.pth was removed
+2024-10-31 10:54:03,366 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_15.pth.
+2024-10-31 10:54:03,367 - mmcls - INFO - Best mAP is 33.4513 at 15 epoch.
+2024-10-31 10:54:03,368 - mmcls - INFO - Epoch(val) [15][221]	mAP: 33.4513
+2024-10-31 10:54:05,774 - mmcls - INFO - Epoch [16][5/24]	lr: 1.464e-04, eta: 0:00:16, time: 0.480, data_time: 0.431, memory: 859, loss: 4.6635
+2024-10-31 10:54:06,028 - mmcls - INFO - Epoch [16][10/24]	lr: 1.464e-04, eta: 0:00:15, time: 0.051, data_time: 0.001, memory: 859, loss: 4.6391
+2024-10-31 10:54:06,279 - mmcls - INFO - Epoch [16][15/24]	lr: 1.464e-04, eta: 0:00:15, time: 0.050, data_time: 0.001, memory: 859, loss: 4.7935
+2024-10-31 10:54:06,527 - mmcls - INFO - Epoch [16][20/24]	lr: 1.464e-04, eta: 0:00:14, time: 0.050, data_time: 0.001, memory: 859, loss: 5.4968
+2024-10-31 10:54:06,731 - mmcls - INFO - Saving checkpoint at 16 epochs
+2024-10-31 10:54:14,247 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_15.pth was removed
+2024-10-31 10:54:14,505 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_16.pth.
+2024-10-31 10:54:14,506 - mmcls - INFO - Best mAP is 33.8247 at 16 epoch.
+2024-10-31 10:54:14,507 - mmcls - INFO - Epoch(val) [16][221]	mAP: 33.8247
+2024-10-31 10:54:16,918 - mmcls - INFO - Epoch [17][5/24]	lr: 9.549e-05, eta: 0:00:13, time: 0.481, data_time: 0.432, memory: 859, loss: 4.3441
+2024-10-31 10:54:17,172 - mmcls - INFO - Epoch [17][10/24]	lr: 9.549e-05, eta: 0:00:12, time: 0.051, data_time: 0.001, memory: 859, loss: 5.1433
+2024-10-31 10:54:17,422 - mmcls - INFO - Epoch [17][15/24]	lr: 9.549e-05, eta: 0:00:11, time: 0.050, data_time: 0.001, memory: 859, loss: 5.3014
+2024-10-31 10:54:17,666 - mmcls - INFO - Epoch [17][20/24]	lr: 9.549e-05, eta: 0:00:10, time: 0.049, data_time: 0.001, memory: 859, loss: 5.1175
+2024-10-31 10:54:17,855 - mmcls - INFO - Saving checkpoint at 17 epochs
+2024-10-31 10:54:25,320 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_16.pth was removed
+2024-10-31 10:54:25,601 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_17.pth.
+2024-10-31 10:54:25,603 - mmcls - INFO - Best mAP is 34.5893 at 17 epoch.
+2024-10-31 10:54:25,604 - mmcls - INFO - Epoch(val) [17][221]	mAP: 34.5893
+2024-10-31 10:54:28,008 - mmcls - INFO - Epoch [18][5/24]	lr: 5.450e-05, eta: 0:00:09, time: 0.480, data_time: 0.430, memory: 859, loss: 4.7414
+2024-10-31 10:54:28,262 - mmcls - INFO - Epoch [18][10/24]	lr: 5.450e-05, eta: 0:00:08, time: 0.051, data_time: 0.001, memory: 859, loss: 4.2071
+2024-10-31 10:54:28,520 - mmcls - INFO - Epoch [18][15/24]	lr: 5.450e-05, eta: 0:00:08, time: 0.052, data_time: 0.001, memory: 859, loss: 4.7291
+2024-10-31 10:54:28,756 - mmcls - INFO - Epoch [18][20/24]	lr: 5.450e-05, eta: 0:00:07, time: 0.047, data_time: 0.001, memory: 859, loss: 4.2256
+2024-10-31 10:54:28,942 - mmcls - INFO - Saving checkpoint at 18 epochs
+2024-10-31 10:54:36,500 - mmcls - INFO - The previous best checkpoint /mnt/petrelfs/jiyuanfeng.p/project/radiffuser/work_dirs/downsteam/cls/medfmc/fewshot/syn5/5_shot_exp5/best_mAP_epoch_17.pth was removed
+2024-10-31 10:54:36,747 - mmcls - INFO - Now best checkpoint is saved as best_mAP_epoch_18.pth.
+2024-10-31 10:54:36,749 - mmcls - INFO - Best mAP is 35.1092 at 18 epoch.
+2024-10-31 10:54:36,750 - mmcls - INFO - Epoch(val) [18][221]	mAP: 35.1092
+2024-10-31 10:54:39,130 - mmcls - INFO - Epoch [19][5/24]	lr: 2.447e-05, eta: 0:00:06, time: 0.475, data_time: 0.426, memory: 859, loss: 4.8758
+2024-10-31 10:54:39,360 - mmcls - INFO - Epoch [19][10/24]	lr: 2.447e-05, eta: 0:00:05, time: 0.046, data_time: 0.001, memory: 859, loss: 4.8713
+2024-10-31 10:54:39,623 - mmcls - INFO - Epoch [19][15/24]	lr: 2.447e-05, eta: 0:00:04, time: 0.052, data_time: 0.001, memory: 859, loss: 5.4097
+2024-10-31 10:54:39,859 - mmcls - INFO - Epoch [19][20/24]	lr: 2.447e-05, eta: 0:00:03, time: 0.047, data_time: 0.001, memory: 859, loss: 3.7131
+2024-10-31 10:54:40,065 - mmcls - INFO - Saving checkpoint at 19 epochs
+2024-10-31 10:54:47,596 - mmcls - INFO - Epoch(val) [19][221]	mAP: 34.6158
+2024-10-31 10:54:50,000 - mmcls - INFO - Epoch [20][5/24]	lr: 6.156e-06, eta: 0:00:02, time: 0.479, data_time: 0.431, memory: 859, loss: 4.3338
+2024-10-31 10:54:50,251 - mmcls - INFO - Epoch [20][10/24]	lr: 6.156e-06, eta: 0:00:01, time: 0.050, data_time: 0.001, memory: 859, loss: 5.0178
+2024-10-31 10:54:50,494 - mmcls - INFO - Epoch [20][15/24]	lr: 6.156e-06, eta: 0:00:01, time: 0.049, data_time: 0.001, memory: 859, loss: 4.2677
+2024-10-31 10:54:50,737 - mmcls - INFO - Epoch [20][20/24]	lr: 6.156e-06, eta: 0:00:00, time: 0.049, data_time: 0.001, memory: 859, loss: 4.6152
+2024-10-31 10:54:50,928 - mmcls - INFO - Saving checkpoint at 20 epochs
+2024-10-31 10:54:58,426 - mmcls - INFO - Epoch(val) [20][221]	mAP: 34.6517

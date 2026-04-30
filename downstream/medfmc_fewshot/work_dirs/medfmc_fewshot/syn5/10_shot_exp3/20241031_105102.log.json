@@ -1,0 +1,201 @@
+{"env_info": "sys.platform: linux\nPython: 3.9.18 (main, Sep 11 2023, 13:41:44) [GCC 11.2.0]\nCUDA available: True\nGPU 0: NVIDIA A100-SXM4-80GB\nCUDA_HOME: /mnt/lustre/share/cuda-11.8\nNVCC: Cuda compilation tools, release 11.8, V11.8.89\nGCC: gcc (GCC) 7.3.0\nPyTorch: 2.2.0+cu121\nPyTorch compiling details: PyTorch built with:\n  - GCC 9.3\n  - C++ Version: 201703\n  - Intel(R) oneAPI Math Kernel Library Version 2022.2-Product Build 20220804 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.3.2 (Git Hash 2dc95a2ad0841e29db8b22fbccaf3e5da7992b01)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - CUDA Runtime 12.1\n  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90\n  - CuDNN 8.9.2\n  - Magma 2.6.1\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=12.1, CUDNN_VERSION=8.9.2, CXX_COMPILER=/opt/rh/devtoolset-9/root/usr/bin/c++, CXX_FLAGS= -D_GLIBCXX_USE_CXX11_ABI=0 -fabi-version=11 -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOROCTRACER -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=pedantic -Wno-error=old-style-cast -Wno-missing-braces -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=2.2.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=1, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, \n\nTorchVision: 0.17.0+cu121\nOpenCV: 4.9.0\nMMCV: 1.6.0\nMMCV Compiler: n/a\nMMCV CUDA Compiler: n/a\nMMClassification: 0.25.0+68bac71", "seed": 0, "mmcls_version": "0.25.0", "config": "model = dict(\n    type='ImageClassifier',\n    backbone=dict(\n        type='DenseNet',\n        arch='121',\n        init_cfg=dict(\n            type='Pretrained',\n            checkpoint='weights/densenet121_4xb256_in1k_20220426-07450f99.pth',\n            prefix='backbone')),\n    neck=dict(type='GlobalAveragePooling'),\n    head=dict(\n        type='MultiLabelLinearClsHead', num_classes=19, in_channels=1024))\ndataset_type = 'Chest19'\nimg_norm_cfg = dict(\n    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)\ntrain_pipeline = [\n    dict(type='LoadImageFromFile'),\n    dict(\n        type='RandomResizedCrop',\n        size=256,\n        backend='pillow',\n        interpolation='bicubic'),\n    dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),\n    dict(\n        type='Normalize',\n        mean=[123.675, 116.28, 103.53],\n        std=[58.395, 57.12, 57.375],\n        to_rgb=True),\n    dict(type='ImageToTensor', keys=['img']),\n    dict(type='ToTensor', keys=['gt_label']),\n    dict(type='Collect', keys=['img', 'gt_label'])\n]\ntest_pipeline = [\n    dict(type='LoadImageFromFile'),\n    dict(type='Resize', size=256, backend='pillow', interpolation='bicubic'),\n    dict(\n        type='Normalize',\n        mean=[123.675, 116.28, 103.53],\n        std=[58.395, 57.12, 57.375],\n        to_rgb=True),\n    dict(type='ImageToTensor', keys=['img']),\n    dict(type='Collect', keys=['img'])\n]\ndata = dict(\n    samples_per_gpu=4,\n    workers_per_gpu=4,\n    train=dict(\n        type='Chest19',\n        data_prefix=\n        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',\n        ann_file=\n        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/chest_10-shot_train_exp3.txt',\n        pipeline=[\n            dict(type='LoadImageFromFile'),\n            dict(\n                type='RandomResizedCrop',\n                size=256,\n                backend='pillow',\n                interpolation='bicubic'),\n            dict(type='RandomFlip', flip_prob=0.5, direction='horizontal'),\n            dict(\n                type='Normalize',\n                mean=[123.675, 116.28, 103.53],\n                std=[58.395, 57.12, 57.375],\n                to_rgb=True),\n            dict(type='ImageToTensor', keys=['img']),\n            dict(type='ToTensor', keys=['gt_label']),\n            dict(type='Collect', keys=['img', 'gt_label'])\n        ]),\n    val=dict(\n        type='Chest19',\n        data_prefix=\n        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',\n        ann_file=\n        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/chest_10-shot_val_exp3.txt',\n        pipeline=[\n            dict(type='LoadImageFromFile'),\n            dict(\n                type='Resize',\n                size=256,\n                backend='pillow',\n                interpolation='bicubic'),\n            dict(\n                type='Normalize',\n                mean=[123.675, 116.28, 103.53],\n                std=[58.395, 57.12, 57.375],\n                to_rgb=True),\n            dict(type='ImageToTensor', keys=['img']),\n            dict(type='Collect', keys=['img'])\n        ]),\n    test=dict(\n        type='Chest19',\n        data_prefix=\n        '/mnt/petrelfs/jiyuanfeng.p/data/medfmc/MedFMC_train/chest/images',\n        ann_file=\n        '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/chest/test_WithLabel.txt',\n        pipeline=[\n            dict(type='LoadImageFromFile'),\n            dict(\n                type='Resize',\n                size=256,\n                backend='pillow',\n                interpolation='bicubic'),\n            dict(\n                type='Normalize',\n                mean=[123.675, 116.28, 103.53],\n                std=[58.395, 57.12, 57.375],\n                to_rgb=True),\n            dict(type='ImageToTensor', keys=['img']),\n            dict(type='Collect', keys=['img'])\n        ]))\nevaluation = dict(interval=1, metric='mAP', save_best='auto')\noptimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)\noptimizer_config = dict(grad_clip=None)\nlr_config = dict(policy='CosineAnnealing', min_lr=0)\nrunner = dict(type='EpochBasedRunner', max_epochs=20)\ncheckpoint_config = dict(interval=1, max_keep_ckpts=1)\nlog_config = dict(interval=5, hooks=[dict(type='TextLoggerHook')])\ndist_params = dict(backend='nccl')\nlog_level = 'INFO'\nload_from = 'work_dirs/downsteam/cls/mimic/pretrain/sync5/latest.pth'\nresume_from = None\nworkflow = [('train', 1)]\ncustom_imports = dict(\n    imports=[\n        'medfmc.models', 'medfmc.datasets.medical_datasets',\n        'medfmc.core.evaluation'\n    ],\n    allow_failed_imports=False)\ndataset = 'chest'\nnshot = 10\nexp = 3\nbase_path = '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC'\ntrain_val_template = '/mnt/petrelfs/jiyuanfeng.p/project/radiffuser/tools/downstream/medfm/data_backup/MedFMC/{dataset}/{dataset}_{nshot}-shot_{split}_exp{exp}.txt'\nwork_dir = 'work_dirs/downsteam/cls/medfmc/fewshot/syn5/10_shot_exp3'\ngpu_ids = [0]\ndevice = 'cuda'\nseed = 0\n", "CLASSES": ["pleural_effusion", "nodule", "pneumonia", "cardiomegaly", "hilar_enlargement", "fracture_old", "fibrosis", "aortic_calcification", "tortuous_aorta", "thickened_pleura", "TB", "pneumothorax", "emphysema", "atelectasis", "calcification", "pulmonary_edema", "increased_lung_markings", "elevated_diaphragm", "consolidation"], "hook_msgs": {}}
+{"mode": "train", "epoch": 1, "iter": 5, "lr": 0.001, "memory": 859, "data_time": 0.46598, "loss": 10.82422, "time": 1.2025}
+{"mode": "train", "epoch": 1, "iter": 10, "lr": 0.001, "memory": 859, "data_time": 0.00141, "loss": 8.296, "time": 0.04855}
+{"mode": "train", "epoch": 1, "iter": 15, "lr": 0.001, "memory": 859, "data_time": 0.00109, "loss": 9.72136, "time": 0.04982}
+{"mode": "train", "epoch": 1, "iter": 20, "lr": 0.001, "memory": 859, "data_time": 0.001, "loss": 9.07625, "time": 0.04901}
+{"mode": "train", "epoch": 1, "iter": 25, "lr": 0.001, "memory": 859, "data_time": 0.00107, "loss": 10.11677, "time": 0.05158}
+{"mode": "train", "epoch": 1, "iter": 30, "lr": 0.001, "memory": 859, "data_time": 0.00105, "loss": 8.39519, "time": 0.04985}
+{"mode": "train", "epoch": 1, "iter": 35, "lr": 0.001, "memory": 859, "data_time": 0.00138, "loss": 9.19459, "time": 0.05209}
+{"mode": "train", "epoch": 1, "iter": 40, "lr": 0.001, "memory": 859, "data_time": 0.00107, "loss": 7.77919, "time": 0.04743}
+{"mode": "train", "epoch": 1, "iter": 45, "lr": 0.001, "memory": 859, "data_time": 0.00103, "loss": 8.8278, "time": 0.04582}
+{"mode": "val", "epoch": 1, "iter": 198, "lr": 0.001, "mAP": 25.00457}
+{"mode": "train", "epoch": 2, "iter": 5, "lr": 0.00099, "memory": 859, "data_time": 0.4337, "loss": 9.07829, "time": 0.4818}
+{"mode": "train", "epoch": 2, "iter": 10, "lr": 0.00099, "memory": 859, "data_time": 0.00134, "loss": 8.41079, "time": 0.04851}
+{"mode": "train", "epoch": 2, "iter": 15, "lr": 0.00099, "memory": 859, "data_time": 0.00113, "loss": 7.84262, "time": 0.04753}
+{"mode": "train", "epoch": 2, "iter": 20, "lr": 0.00099, "memory": 859, "data_time": 0.00101, "loss": 7.71493, "time": 0.04995}
+{"mode": "train", "epoch": 2, "iter": 25, "lr": 0.00099, "memory": 859, "data_time": 0.00104, "loss": 7.86097, "time": 0.04796}
+{"mode": "train", "epoch": 2, "iter": 30, "lr": 0.00099, "memory": 859, "data_time": 0.00103, "loss": 7.92053, "time": 0.04754}
+{"mode": "train", "epoch": 2, "iter": 35, "lr": 0.00099, "memory": 859, "data_time": 0.00137, "loss": 9.36101, "time": 0.05015}
+{"mode": "train", "epoch": 2, "iter": 40, "lr": 0.00099, "memory": 859, "data_time": 0.00112, "loss": 8.25976, "time": 0.04927}
+{"mode": "train", "epoch": 2, "iter": 45, "lr": 0.00099, "memory": 859, "data_time": 0.00106, "loss": 7.77419, "time": 0.04721}
+{"mode": "val", "epoch": 2, "iter": 198, "lr": 0.00099, "mAP": 20.76663}
+{"mode": "train", "epoch": 3, "iter": 5, "lr": 0.00098, "memory": 859, "data_time": 0.42912, "loss": 7.71757, "time": 0.47855}
+{"mode": "train", "epoch": 3, "iter": 10, "lr": 0.00098, "memory": 859, "data_time": 0.00147, "loss": 8.12682, "time": 0.05035}
+{"mode": "train", "epoch": 3, "iter": 15, "lr": 0.00098, "memory": 859, "data_time": 0.00104, "loss": 8.68026, "time": 0.04739}
+{"mode": "train", "epoch": 3, "iter": 20, "lr": 0.00098, "memory": 859, "data_time": 0.00108, "loss": 8.02895, "time": 0.04977}
+{"mode": "train", "epoch": 3, "iter": 25, "lr": 0.00098, "memory": 859, "data_time": 0.00104, "loss": 8.37581, "time": 0.05073}
+{"mode": "train", "epoch": 3, "iter": 30, "lr": 0.00098, "memory": 859, "data_time": 0.00101, "loss": 9.00099, "time": 0.04823}
+{"mode": "train", "epoch": 3, "iter": 35, "lr": 0.00098, "memory": 859, "data_time": 0.00141, "loss": 8.77955, "time": 0.04883}
+{"mode": "train", "epoch": 3, "iter": 40, "lr": 0.00098, "memory": 859, "data_time": 0.00103, "loss": 8.19086, "time": 0.04787}
+{"mode": "train", "epoch": 3, "iter": 45, "lr": 0.00098, "memory": 859, "data_time": 0.00091, "loss": 8.99259, "time": 0.04855}
+{"mode": "val", "epoch": 3, "iter": 198, "lr": 0.00098, "mAP": 27.75726}
+{"mode": "train", "epoch": 4, "iter": 5, "lr": 0.00095, "memory": 859, "data_time": 0.42981, "loss": 8.64593, "time": 0.47956}
+{"mode": "train", "epoch": 4, "iter": 10, "lr": 0.00095, "memory": 859, "data_time": 0.00141, "loss": 7.35193, "time": 0.04953}
+{"mode": "train", "epoch": 4, "iter": 15, "lr": 0.00095, "memory": 859, "data_time": 0.00107, "loss": 8.63104, "time": 0.05119}
+{"mode": "train", "epoch": 4, "iter": 20, "lr": 0.00095, "memory": 859, "data_time": 0.00108, "loss": 7.16819, "time": 0.05063}
+{"mode": "train", "epoch": 4, "iter": 25, "lr": 0.00095, "memory": 859, "data_time": 0.00102, "loss": 8.1222, "time": 0.04864}
+{"mode": "train", "epoch": 4, "iter": 30, "lr": 0.00095, "memory": 859, "data_time": 0.00137, "loss": 8.41799, "time": 0.05125}
+{"mode": "train", "epoch": 4, "iter": 35, "lr": 0.00095, "memory": 859, "data_time": 0.00106, "loss": 8.21466, "time": 0.04848}
+{"mode": "train", "epoch": 4, "iter": 40, "lr": 0.00095, "memory": 859, "data_time": 0.00114, "loss": 7.98848, "time": 0.0513}
+{"mode": "train", "epoch": 4, "iter": 45, "lr": 0.00095, "memory": 859, "data_time": 0.00097, "loss": 9.29069, "time": 0.04609}
+{"mode": "val", "epoch": 4, "iter": 198, "lr": 0.00095, "mAP": 30.56353}
+{"mode": "train", "epoch": 5, "iter": 5, "lr": 0.0009, "memory": 859, "data_time": 0.42798, "loss": 7.38743, "time": 0.4778}
+{"mode": "train", "epoch": 5, "iter": 10, "lr": 0.0009, "memory": 859, "data_time": 0.00135, "loss": 7.60634, "time": 0.04915}
+{"mode": "train", "epoch": 5, "iter": 15, "lr": 0.0009, "memory": 859, "data_time": 0.001, "loss": 7.48742, "time": 0.05052}
+{"mode": "train", "epoch": 5, "iter": 20, "lr": 0.0009, "memory": 859, "data_time": 0.00101, "loss": 7.36942, "time": 0.04937}
+{"mode": "train", "epoch": 5, "iter": 25, "lr": 0.0009, "memory": 859, "data_time": 0.00112, "loss": 8.35354, "time": 0.05036}
+{"mode": "train", "epoch": 5, "iter": 30, "lr": 0.0009, "memory": 859, "data_time": 0.00098, "loss": 7.00137, "time": 0.04905}
+{"mode": "train", "epoch": 5, "iter": 35, "lr": 0.0009, "memory": 859, "data_time": 0.00139, "loss": 8.96102, "time": 0.05316}
+{"mode": "train", "epoch": 5, "iter": 40, "lr": 0.0009, "memory": 859, "data_time": 0.00104, "loss": 7.88354, "time": 0.05075}
+{"mode": "train", "epoch": 5, "iter": 45, "lr": 0.0009, "memory": 859, "data_time": 0.00096, "loss": 8.7369, "time": 0.04611}
+{"mode": "val", "epoch": 5, "iter": 198, "lr": 0.0009, "mAP": 31.80783}
+{"mode": "train", "epoch": 6, "iter": 5, "lr": 0.00085, "memory": 859, "data_time": 0.42495, "loss": 6.78965, "time": 0.47449}
+{"mode": "train", "epoch": 6, "iter": 10, "lr": 0.00085, "memory": 859, "data_time": 0.00132, "loss": 7.61645, "time": 0.04805}
+{"mode": "train", "epoch": 6, "iter": 15, "lr": 0.00085, "memory": 859, "data_time": 0.00104, "loss": 7.76753, "time": 0.04889}
+{"mode": "train", "epoch": 6, "iter": 20, "lr": 0.00085, "memory": 859, "data_time": 0.0011, "loss": 7.03283, "time": 0.05422}
+{"mode": "train", "epoch": 6, "iter": 25, "lr": 0.00085, "memory": 859, "data_time": 0.00109, "loss": 6.66049, "time": 0.04764}
+{"mode": "train", "epoch": 6, "iter": 30, "lr": 0.00085, "memory": 859, "data_time": 0.00107, "loss": 7.46559, "time": 0.04729}
+{"mode": "train", "epoch": 6, "iter": 35, "lr": 0.00085, "memory": 859, "data_time": 0.00139, "loss": 8.11096, "time": 0.04809}
+{"mode": "train", "epoch": 6, "iter": 40, "lr": 0.00085, "memory": 859, "data_time": 0.00108, "loss": 7.04414, "time": 0.04785}
+{"mode": "train", "epoch": 6, "iter": 45, "lr": 0.00085, "memory": 859, "data_time": 0.001, "loss": 7.26615, "time": 0.04764}
+{"mode": "val", "epoch": 6, "iter": 198, "lr": 0.00085, "mAP": 34.05972}
+{"mode": "train", "epoch": 7, "iter": 5, "lr": 0.00079, "memory": 859, "data_time": 0.42979, "loss": 6.94069, "time": 0.47812}
+{"mode": "train", "epoch": 7, "iter": 10, "lr": 0.00079, "memory": 859, "data_time": 0.00147, "loss": 6.83725, "time": 0.05029}
+{"mode": "train", "epoch": 7, "iter": 15, "lr": 0.00079, "memory": 859, "data_time": 0.00103, "loss": 7.29204, "time": 0.05099}
+{"mode": "train", "epoch": 7, "iter": 20, "lr": 0.00079, "memory": 859, "data_time": 0.00101, "loss": 6.33163, "time": 0.05158}
+{"mode": "train", "epoch": 7, "iter": 25, "lr": 0.00079, "memory": 859, "data_time": 0.00103, "loss": 7.07861, "time": 0.04984}
+{"mode": "train", "epoch": 7, "iter": 30, "lr": 0.00079, "memory": 859, "data_time": 0.00137, "loss": 7.87162, "time": 0.0473}
+{"mode": "train", "epoch": 7, "iter": 35, "lr": 0.00079, "memory": 859, "data_time": 0.00105, "loss": 7.41666, "time": 0.0469}
+{"mode": "train", "epoch": 7, "iter": 40, "lr": 0.00079, "memory": 859, "data_time": 0.00109, "loss": 7.50491, "time": 0.04759}
+{"mode": "train", "epoch": 7, "iter": 45, "lr": 0.00079, "memory": 859, "data_time": 0.00097, "loss": 7.48343, "time": 0.04602}
+{"mode": "val", "epoch": 7, "iter": 198, "lr": 0.00079, "mAP": 35.32234}
+{"mode": "train", "epoch": 8, "iter": 5, "lr": 0.00073, "memory": 859, "data_time": 0.43035, "loss": 5.92272, "time": 0.47749}
+{"mode": "train", "epoch": 8, "iter": 10, "lr": 0.00073, "memory": 859, "data_time": 0.00142, "loss": 8.28357, "time": 0.04978}
+{"mode": "train", "epoch": 8, "iter": 15, "lr": 0.00073, "memory": 859, "data_time": 0.0089, "loss": 6.72045, "time": 0.05936}
+{"mode": "train", "epoch": 8, "iter": 20, "lr": 0.00073, "memory": 859, "data_time": 0.00101, "loss": 6.24338, "time": 0.04972}
+{"mode": "train", "epoch": 8, "iter": 25, "lr": 0.00073, "memory": 859, "data_time": 0.001, "loss": 7.46253, "time": 0.04826}
+{"mode": "train", "epoch": 8, "iter": 30, "lr": 0.00073, "memory": 859, "data_time": 0.00129, "loss": 7.79825, "time": 0.05163}
+{"mode": "train", "epoch": 8, "iter": 35, "lr": 0.00073, "memory": 859, "data_time": 0.009, "loss": 7.50346, "time": 0.05504}
+{"mode": "train", "epoch": 8, "iter": 40, "lr": 0.00073, "memory": 859, "data_time": 0.0011, "loss": 6.90677, "time": 0.04907}
+{"mode": "train", "epoch": 8, "iter": 45, "lr": 0.00073, "memory": 859, "data_time": 0.00096, "loss": 7.08714, "time": 0.04647}
+{"mode": "val", "epoch": 8, "iter": 198, "lr": 0.00073, "mAP": 35.24756}
+{"mode": "train", "epoch": 9, "iter": 5, "lr": 0.00065, "memory": 859, "data_time": 0.43069, "loss": 7.7402, "time": 0.47982}
+{"mode": "train", "epoch": 9, "iter": 10, "lr": 0.00065, "memory": 859, "data_time": 0.00139, "loss": 6.37151, "time": 0.04816}
+{"mode": "train", "epoch": 9, "iter": 15, "lr": 0.00065, "memory": 859, "data_time": 0.00105, "loss": 7.03594, "time": 0.05014}
+{"mode": "train", "epoch": 9, "iter": 20, "lr": 0.00065, "memory": 859, "data_time": 0.00105, "loss": 6.92572, "time": 0.04802}
+{"mode": "train", "epoch": 9, "iter": 25, "lr": 0.00065, "memory": 859, "data_time": 0.00106, "loss": 7.13288, "time": 0.04764}
+{"mode": "train", "epoch": 9, "iter": 30, "lr": 0.00065, "memory": 859, "data_time": 0.00099, "loss": 6.74848, "time": 0.05007}
+{"mode": "train", "epoch": 9, "iter": 35, "lr": 0.00065, "memory": 859, "data_time": 0.00137, "loss": 6.37865, "time": 0.04796}
+{"mode": "train", "epoch": 9, "iter": 40, "lr": 0.00065, "memory": 859, "data_time": 0.00116, "loss": 6.77184, "time": 0.04756}
+{"mode": "train", "epoch": 9, "iter": 45, "lr": 0.00065, "memory": 859, "data_time": 0.00096, "loss": 6.17613, "time": 0.04625}
+{"mode": "val", "epoch": 9, "iter": 198, "lr": 0.00065, "mAP": 39.37248}
+{"mode": "train", "epoch": 10, "iter": 5, "lr": 0.00058, "memory": 859, "data_time": 0.42312, "loss": 6.55105, "time": 0.4704}
+{"mode": "train", "epoch": 10, "iter": 10, "lr": 0.00058, "memory": 859, "data_time": 0.00141, "loss": 5.75578, "time": 0.05033}
+{"mode": "train", "epoch": 10, "iter": 15, "lr": 0.00058, "memory": 859, "data_time": 0.00106, "loss": 7.22205, "time": 0.04961}
+{"mode": "train", "epoch": 10, "iter": 20, "lr": 0.00058, "memory": 859, "data_time": 0.00104, "loss": 6.06355, "time": 0.05104}
+{"mode": "train", "epoch": 10, "iter": 25, "lr": 0.00058, "memory": 859, "data_time": 0.00103, "loss": 6.16333, "time": 0.04821}
+{"mode": "train", "epoch": 10, "iter": 30, "lr": 0.00058, "memory": 859, "data_time": 0.00108, "loss": 6.00889, "time": 0.04493}
+{"mode": "train", "epoch": 10, "iter": 35, "lr": 0.00058, "memory": 859, "data_time": 0.00135, "loss": 5.94348, "time": 0.04527}
+{"mode": "train", "epoch": 10, "iter": 40, "lr": 0.00058, "memory": 859, "data_time": 0.00097, "loss": 5.58635, "time": 0.04523}
+{"mode": "train", "epoch": 10, "iter": 45, "lr": 0.00058, "memory": 859, "data_time": 0.00088, "loss": 7.93634, "time": 0.04272}
+{"mode": "val", "epoch": 10, "iter": 198, "lr": 0.00058, "mAP": 40.07692}
+{"mode": "train", "epoch": 11, "iter": 5, "lr": 0.0005, "memory": 859, "data_time": 0.42654, "loss": 5.97715, "time": 0.47475}
+{"mode": "train", "epoch": 11, "iter": 10, "lr": 0.0005, "memory": 859, "data_time": 0.00131, "loss": 5.92971, "time": 0.04579}
+{"mode": "train", "epoch": 11, "iter": 15, "lr": 0.0005, "memory": 859, "data_time": 0.00101, "loss": 6.43852, "time": 0.04472}
+{"mode": "train", "epoch": 11, "iter": 20, "lr": 0.0005, "memory": 859, "data_time": 0.001, "loss": 6.84688, "time": 0.04476}
+{"mode": "train", "epoch": 11, "iter": 25, "lr": 0.0005, "memory": 859, "data_time": 0.001, "loss": 5.44081, "time": 0.04776}
+{"mode": "train", "epoch": 11, "iter": 30, "lr": 0.0005, "memory": 859, "data_time": 0.00098, "loss": 6.23793, "time": 0.04464}
+{"mode": "train", "epoch": 11, "iter": 35, "lr": 0.0005, "memory": 859, "data_time": 0.00123, "loss": 6.15423, "time": 0.04709}
+{"mode": "train", "epoch": 11, "iter": 40, "lr": 0.0005, "memory": 859, "data_time": 0.00104, "loss": 7.44902, "time": 0.04509}
+{"mode": "train", "epoch": 11, "iter": 45, "lr": 0.0005, "memory": 859, "data_time": 0.00097, "loss": 5.32792, "time": 0.0426}
+{"mode": "val", "epoch": 11, "iter": 198, "lr": 0.0005, "mAP": 41.94798}
+{"mode": "train", "epoch": 12, "iter": 5, "lr": 0.00042, "memory": 859, "data_time": 0.43412, "loss": 5.94291, "time": 0.48075}
+{"mode": "train", "epoch": 12, "iter": 10, "lr": 0.00042, "memory": 859, "data_time": 0.0013, "loss": 6.34098, "time": 0.04517}
+{"mode": "train", "epoch": 12, "iter": 15, "lr": 0.00042, "memory": 859, "data_time": 0.00099, "loss": 5.67771, "time": 0.04781}
+{"mode": "train", "epoch": 12, "iter": 20, "lr": 0.00042, "memory": 859, "data_time": 0.00097, "loss": 5.59666, "time": 0.0459}
+{"mode": "train", "epoch": 12, "iter": 25, "lr": 0.00042, "memory": 859, "data_time": 0.0018, "loss": 5.89495, "time": 0.04628}
+{"mode": "train", "epoch": 12, "iter": 30, "lr": 0.00042, "memory": 859, "data_time": 0.00107, "loss": 6.08904, "time": 0.0457}
+{"mode": "train", "epoch": 12, "iter": 35, "lr": 0.00042, "memory": 859, "data_time": 0.00133, "loss": 5.90681, "time": 0.05025}
+{"mode": "train", "epoch": 12, "iter": 40, "lr": 0.00042, "memory": 859, "data_time": 0.00102, "loss": 5.8784, "time": 0.04662}
+{"mode": "train", "epoch": 12, "iter": 45, "lr": 0.00042, "memory": 859, "data_time": 0.0009, "loss": 6.04903, "time": 0.04462}
+{"mode": "val", "epoch": 12, "iter": 198, "lr": 0.00042, "mAP": 43.80762}
+{"mode": "train", "epoch": 13, "iter": 5, "lr": 0.00035, "memory": 859, "data_time": 0.43481, "loss": 5.69245, "time": 0.47969}
+{"mode": "train", "epoch": 13, "iter": 10, "lr": 0.00035, "memory": 859, "data_time": 0.00129, "loss": 5.33517, "time": 0.04695}
+{"mode": "train", "epoch": 13, "iter": 15, "lr": 0.00035, "memory": 859, "data_time": 0.00099, "loss": 5.26139, "time": 0.04448}
+{"mode": "train", "epoch": 13, "iter": 20, "lr": 0.00035, "memory": 859, "data_time": 0.00098, "loss": 5.59895, "time": 0.04988}
+{"mode": "train", "epoch": 13, "iter": 25, "lr": 0.00035, "memory": 859, "data_time": 0.00115, "loss": 5.80823, "time": 0.04613}
+{"mode": "train", "epoch": 13, "iter": 30, "lr": 0.00035, "memory": 859, "data_time": 0.00107, "loss": 5.71442, "time": 0.04955}
+{"mode": "train", "epoch": 13, "iter": 35, "lr": 0.00035, "memory": 859, "data_time": 0.00107, "loss": 5.61009, "time": 0.05124}
+{"mode": "train", "epoch": 13, "iter": 40, "lr": 0.00035, "memory": 859, "data_time": 0.00101, "loss": 5.11647, "time": 0.04989}
+{"mode": "train", "epoch": 13, "iter": 45, "lr": 0.00035, "memory": 859, "data_time": 0.00094, "loss": 6.10056, "time": 0.04843}
+{"mode": "val", "epoch": 13, "iter": 198, "lr": 0.00035, "mAP": 46.05013}
+{"mode": "train", "epoch": 14, "iter": 5, "lr": 0.00027, "memory": 859, "data_time": 0.42841, "loss": 5.16058, "time": 0.47884}
+{"mode": "train", "epoch": 14, "iter": 10, "lr": 0.00027, "memory": 859, "data_time": 0.00111, "loss": 5.62071, "time": 0.04589}
+{"mode": "train", "epoch": 14, "iter": 15, "lr": 0.00027, "memory": 859, "data_time": 0.00107, "loss": 6.49483, "time": 0.05543}
+{"mode": "train", "epoch": 14, "iter": 20, "lr": 0.00027, "memory": 859, "data_time": 0.00105, "loss": 5.0029, "time": 0.04784}
+{"mode": "train", "epoch": 14, "iter": 25, "lr": 0.00027, "memory": 859, "data_time": 0.00112, "loss": 5.61, "time": 0.05067}
+{"mode": "train", "epoch": 14, "iter": 30, "lr": 0.00027, "memory": 859, "data_time": 0.00137, "loss": 5.00885, "time": 0.05125}
+{"mode": "train", "epoch": 14, "iter": 35, "lr": 0.00027, "memory": 859, "data_time": 0.00103, "loss": 6.96433, "time": 0.04783}
+{"mode": "train", "epoch": 14, "iter": 40, "lr": 0.00027, "memory": 859, "data_time": 0.00112, "loss": 5.40192, "time": 0.04889}
+{"mode": "train", "epoch": 14, "iter": 45, "lr": 0.00027, "memory": 859, "data_time": 0.00101, "loss": 6.31937, "time": 0.04771}
+{"mode": "val", "epoch": 14, "iter": 198, "lr": 0.00027, "mAP": 47.32221}
+{"mode": "train", "epoch": 15, "iter": 5, "lr": 0.00021, "memory": 859, "data_time": 0.42711, "loss": 5.48389, "time": 0.47781}
+{"mode": "train", "epoch": 15, "iter": 10, "lr": 0.00021, "memory": 859, "data_time": 0.00145, "loss": 5.44975, "time": 0.04985}
+{"mode": "train", "epoch": 15, "iter": 15, "lr": 0.00021, "memory": 859, "data_time": 0.00115, "loss": 5.86641, "time": 0.04881}
+{"mode": "train", "epoch": 15, "iter": 20, "lr": 0.00021, "memory": 859, "data_time": 0.00108, "loss": 7.0086, "time": 0.05103}
+{"mode": "train", "epoch": 15, "iter": 25, "lr": 0.00021, "memory": 859, "data_time": 0.00112, "loss": 5.09183, "time": 0.0501}
+{"mode": "train", "epoch": 15, "iter": 30, "lr": 0.00021, "memory": 859, "data_time": 0.00106, "loss": 5.19951, "time": 0.05003}
+{"mode": "train", "epoch": 15, "iter": 35, "lr": 0.00021, "memory": 859, "data_time": 0.00141, "loss": 5.70997, "time": 0.04894}
+{"mode": "train", "epoch": 15, "iter": 40, "lr": 0.00021, "memory": 859, "data_time": 0.00111, "loss": 4.74967, "time": 0.04833}
+{"mode": "train", "epoch": 15, "iter": 45, "lr": 0.00021, "memory": 859, "data_time": 0.00101, "loss": 4.89576, "time": 0.04659}
+{"mode": "val", "epoch": 15, "iter": 198, "lr": 0.00021, "mAP": 48.3811}
+{"mode": "train", "epoch": 16, "iter": 5, "lr": 0.00015, "memory": 859, "data_time": 0.42849, "loss": 4.86664, "time": 0.47641}
+{"mode": "train", "epoch": 16, "iter": 10, "lr": 0.00015, "memory": 859, "data_time": 0.00138, "loss": 4.33674, "time": 0.05524}
+{"mode": "train", "epoch": 16, "iter": 15, "lr": 0.00015, "memory": 859, "data_time": 0.00108, "loss": 5.59843, "time": 0.04892}
+{"mode": "train", "epoch": 16, "iter": 20, "lr": 0.00015, "memory": 859, "data_time": 0.00105, "loss": 5.27031, "time": 0.05085}
+{"mode": "train", "epoch": 16, "iter": 25, "lr": 0.00015, "memory": 859, "data_time": 0.00102, "loss": 5.49438, "time": 0.05161}
+{"mode": "train", "epoch": 16, "iter": 30, "lr": 0.00015, "memory": 859, "data_time": 0.00133, "loss": 4.42737, "time": 0.05022}
+{"mode": "train", "epoch": 16, "iter": 35, "lr": 0.00015, "memory": 859, "data_time": 0.00117, "loss": 5.50574, "time": 0.05375}
+{"mode": "train", "epoch": 16, "iter": 40, "lr": 0.00015, "memory": 859, "data_time": 0.00112, "loss": 5.58747, "time": 0.04896}
+{"mode": "train", "epoch": 16, "iter": 45, "lr": 0.00015, "memory": 859, "data_time": 0.00096, "loss": 5.7952, "time": 0.04627}
+{"mode": "val", "epoch": 16, "iter": 198, "lr": 0.00015, "mAP": 49.11941}
+{"mode": "train", "epoch": 17, "iter": 5, "lr": 0.0001, "memory": 859, "data_time": 0.42884, "loss": 5.27526, "time": 0.47938}
+{"mode": "train", "epoch": 17, "iter": 10, "lr": 0.0001, "memory": 859, "data_time": 0.00147, "loss": 4.8064, "time": 0.05173}
+{"mode": "train", "epoch": 17, "iter": 15, "lr": 0.0001, "memory": 859, "data_time": 0.00101, "loss": 5.54163, "time": 0.05027}
+{"mode": "train", "epoch": 17, "iter": 20, "lr": 0.0001, "memory": 859, "data_time": 0.00105, "loss": 5.13735, "time": 0.04795}
+{"mode": "train", "epoch": 17, "iter": 25, "lr": 0.0001, "memory": 859, "data_time": 0.00112, "loss": 5.10166, "time": 0.04841}
+{"mode": "train", "epoch": 17, "iter": 30, "lr": 0.0001, "memory": 859, "data_time": 0.00105, "loss": 5.31409, "time": 0.05045}
+{"mode": "train", "epoch": 17, "iter": 35, "lr": 0.0001, "memory": 859, "data_time": 0.00138, "loss": 5.7001, "time": 0.04775}
+{"mode": "train", "epoch": 17, "iter": 40, "lr": 0.0001, "memory": 859, "data_time": 0.00111, "loss": 5.32023, "time": 0.04789}
+{"mode": "train", "epoch": 17, "iter": 45, "lr": 0.0001, "memory": 859, "data_time": 0.00104, "loss": 4.87092, "time": 0.04621}
+{"mode": "val", "epoch": 17, "iter": 198, "lr": 0.0001, "mAP": 49.69455}
+{"mode": "train", "epoch": 18, "iter": 5, "lr": 5e-05, "memory": 859, "data_time": 0.42636, "loss": 4.61279, "time": 0.47498}
+{"mode": "train", "epoch": 18, "iter": 10, "lr": 5e-05, "memory": 859, "data_time": 0.0014, "loss": 4.5059, "time": 0.05608}
+{"mode": "train", "epoch": 18, "iter": 15, "lr": 5e-05, "memory": 859, "data_time": 0.00109, "loss": 4.20636, "time": 0.05311}
+{"mode": "train", "epoch": 18, "iter": 20, "lr": 5e-05, "memory": 859, "data_time": 0.00103, "loss": 5.36943, "time": 0.04806}
+{"mode": "train", "epoch": 18, "iter": 25, "lr": 5e-05, "memory": 859, "data_time": 0.00111, "loss": 5.67196, "time": 0.05034}
+{"mode": "train", "epoch": 18, "iter": 30, "lr": 5e-05, "memory": 859, "data_time": 0.00143, "loss": 4.78464, "time": 0.0499}
+{"mode": "train", "epoch": 18, "iter": 35, "lr": 5e-05, "memory": 859, "data_time": 0.00102, "loss": 5.30126, "time": 0.04955}
+{"mode": "train", "epoch": 18, "iter": 40, "lr": 5e-05, "memory": 859, "data_time": 0.00105, "loss": 5.10829, "time": 0.04753}
+{"mode": "train", "epoch": 18, "iter": 45, "lr": 5e-05, "memory": 859, "data_time": 0.00097, "loss": 4.353, "time": 0.04641}
+{"mode": "val", "epoch": 18, "iter": 198, "lr": 5e-05, "mAP": 49.44261}
+{"mode": "train", "epoch": 19, "iter": 5, "lr": 2e-05, "memory": 859, "data_time": 0.43583, "loss": 4.69124, "time": 0.48622}
+{"mode": "train", "epoch": 19, "iter": 10, "lr": 2e-05, "memory": 859, "data_time": 0.00143, "loss": 4.51059, "time": 0.049}
+{"mode": "train", "epoch": 19, "iter": 15, "lr": 2e-05, "memory": 859, "data_time": 0.00096, "loss": 4.45943, "time": 0.05084}
+{"mode": "train", "epoch": 19, "iter": 20, "lr": 2e-05, "memory": 859, "data_time": 0.00107, "loss": 5.18086, "time": 0.05135}
+{"mode": "train", "epoch": 19, "iter": 25, "lr": 2e-05, "memory": 859, "data_time": 0.00102, "loss": 4.32294, "time": 0.04837}
+{"mode": "train", "epoch": 19, "iter": 30, "lr": 2e-05, "memory": 859, "data_time": 0.00102, "loss": 4.59304, "time": 0.05037}
+{"mode": "train", "epoch": 19, "iter": 35, "lr": 2e-05, "memory": 859, "data_time": 0.00132, "loss": 5.32299, "time": 0.0492}
+{"mode": "train", "epoch": 19, "iter": 40, "lr": 2e-05, "memory": 859, "data_time": 0.00101, "loss": 5.194, "time": 0.04768}
+{"mode": "train", "epoch": 19, "iter": 45, "lr": 2e-05, "memory": 859, "data_time": 0.00097, "loss": 5.96007, "time": 0.04814}
+{"mode": "val", "epoch": 19, "iter": 198, "lr": 2e-05, "mAP": 50.05578}
+{"mode": "train", "epoch": 20, "iter": 5, "lr": 1e-05, "memory": 859, "data_time": 0.42717, "loss": 4.62332, "time": 0.47661}
+{"mode": "train", "epoch": 20, "iter": 10, "lr": 1e-05, "memory": 859, "data_time": 0.00136, "loss": 4.68646, "time": 0.04604}
+{"mode": "train", "epoch": 20, "iter": 15, "lr": 1e-05, "memory": 859, "data_time": 0.00098, "loss": 4.81126, "time": 0.04498}
+{"mode": "train", "epoch": 20, "iter": 20, "lr": 1e-05, "memory": 859, "data_time": 0.00098, "loss": 5.79481, "time": 0.04594}
+{"mode": "train", "epoch": 20, "iter": 25, "lr": 1e-05, "memory": 859, "data_time": 0.00108, "loss": 5.33112, "time": 0.04827}
+{"mode": "train", "epoch": 20, "iter": 30, "lr": 1e-05, "memory": 859, "data_time": 0.00107, "loss": 5.10757, "time": 0.04559}
+{"mode": "train", "epoch": 20, "iter": 35, "lr": 1e-05, "memory": 859, "data_time": 0.00134, "loss": 5.56486, "time": 0.04964}
+{"mode": "train", "epoch": 20, "iter": 40, "lr": 1e-05, "memory": 859, "data_time": 0.00101, "loss": 4.68948, "time": 0.04464}
+{"mode": "train", "epoch": 20, "iter": 45, "lr": 1e-05, "memory": 859, "data_time": 0.0009, "loss": 4.30086, "time": 0.04279}
+{"mode": "val", "epoch": 20, "iter": 198, "lr": 1e-05, "mAP": 49.80968}
